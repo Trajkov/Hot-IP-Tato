@@ -1,0 +1,15 @@
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\bin\Debug\Hot IP-Tato.exe.config
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\bin\Debug\Hot IP-Tato.exe
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\bin\Debug\Hot IP-Tato.pdb
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato.csprojAssemblyReference.cache
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Greetings.g.cs
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\App.g.cs
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato_MarkupCompile.cache
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato_MarkupCompile.lref
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Greetings.baml
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato.g.resources
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot_IP_Tato.Properties.Resources.resources
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato.csproj.GenerateResource.cache
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato.csproj.CoreCompileInputs.cache
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato.exe
+D:\Documents\GitHub\Hot-IP-Tato\Hot IP-Tato\Hot IP-Tato\obj\Debug\Hot IP-Tato.pdb
