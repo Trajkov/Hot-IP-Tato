@@ -6,8 +6,18 @@
         xmlns:local="clr-namespace:Hot_IP_Tato"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Image Width="100" Height="100" ></Image>
-        <TextBlock FontWeight="Bold" FontSize="30" HorizontalAlignment="Center">Hot IP-Tato</TextBlock>
-    </Grid>
+  <StackPanel  VerticalAlignment="Top" Background="lightgray">
+    <StackPanel.Resources>
+      <Style TargetType ="Button">
+        <Setter Property="Width" Value="80"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Margin" Value="5"/>
+      </Style>
+    </StackPanel.Resources>
+    <Image Width="100" Height="100" Margin="5"></Image>
+    <TextBlock FontWeight="Bold" FontSize="30" HorizontalAlignment="Center" Margin="5">Hot IP-Tato</TextBlock>
+    <Button>Start</Button>
+    <Button>Options</Button>
+    <Button>Quit</Button>
+  </StackPanel>
 </Window>
