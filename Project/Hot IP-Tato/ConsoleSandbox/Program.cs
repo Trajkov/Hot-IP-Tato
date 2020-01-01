@@ -141,20 +141,24 @@ namespace ConsoleSandbox
     }
     class Program
     {
+        // TODO: create a class to help manage clients and servers.
+        //          It will take a method to process the data (passing the Message object of course).
+        //          It would also have to have a modular target.
         static public int clientnumber = 1;
         static public int totalretries = 0;
         static public int totalFails = 0;
         static public int failedConnections = 0;
         // Max attempted clients 12000
-        static public int totalClients = 1;
+        static public int totalClients = 2;
 
         public static void Main(string[] args)
         {
-            ClientLogic.TestDualClientLogic();
+            TestClientandListenerThreads();
         }
         public static void TestClientandListenerThreads()
         {
             // Test IP_Tato Object
+            Console.WriteLine("Test the IP_Tato");
             IP_Tato tater = new IP_Tato("Tater", "127.0.0.1", 5);
             Console.WriteLine("Hot IP_Tato Object:");
             Console.WriteLine(tater.ToString());
@@ -167,10 +171,7 @@ namespace ConsoleSandbox
             Console.WriteLine("Deserialized Tater: {0}", newTater.ToString());
 
             // Test the Client and Listener Threads
-            // TestClientandListenerThreads();
-
-            // Serialization adventures
-            Console.ReadKey();
+            
             // Create Threadstarts to the methods.
             ThreadStart listenerref = new ThreadStart(CallListenerTest);
             Console.WriteLine("In Main: Creating the Listener thread");
@@ -193,17 +194,6 @@ namespace ConsoleSandbox
             // Console.WriteLine("\n\nMain Thread continues after client thread is started.\n\n");
 
             // Console.ReadKey();
-        }
-        public static void CallToChildThread()
-        {
-            Console.WriteLine("Child thread starts");
-
-            // the thread is paused for 5000 milliseconds
-            int sleepfor = 5000;
-
-            Console.WriteLine("Child Thread Paused for {0} seconds", sleepfor / 1000);
-            Thread.Sleep(sleepfor);
-            Console.WriteLine("Child thread resumes");
         }
         
         public static void CallClientTest()
@@ -253,6 +243,78 @@ namespace ConsoleSandbox
                     Message inboundMessage = new Message();
                     byte[] buffer = new byte[512];
                     
+
+                    int bytes = stream.Read(buffer, 0, buffer.Length);
+                    inboundMessage.Data = buffer;
+                    object responseData = Utilities.Deserialize(inboundMessage) as object;
+                    IP_Tato newtater = responseData as IP_Tato;
+                    Console.WriteLine("Client received: {0}", newtater.ToString());
+
+                    stream.Close();
+                    totalretries = totalretries + retries;
+                    break;
+                }
+                catch (ArgumentNullException e)
+                {
+                    Console.WriteLine("Client ArgumentNullException: {0}", e);
+                    continue;
+                }
+                catch (SocketException e)
+                {
+                    Console.WriteLine("Client SocketException: {0}", e);
+                    continue;
+                }
+
+            }
+            client.Close();
+            if (retries > 4)
+            {
+                totalFails++;
+            }
+            // Moved telemetry display to server
+        }
+        private static void ClientPassTater(IP_Tato tater)
+        {
+            // TODO Add in a test over a network connection (to verify how much it can handle)
+            // TODO Figure out how to negate Denial of Service Attacks.
+            int clientnum = clientnumber++;
+            IPAddress serveraddress = IPAddress.Parse("127.0.0.1");
+            int port = 13000;
+            IPEndPoint server = new IPEndPoint(serveraddress, port);
+            TcpClient client = new TcpClient();
+
+            int retries;
+            for (retries = 0; retries < 5; retries++)
+            {
+                try
+                {
+
+                    client.Connect(server);
+
+                    string message = "Herro, this is dog #" + clientnum + " Retry #" + retries;
+
+                    // Serialize the message
+
+
+                    // Serialize the object
+                    Message outboundMessage = Utilities.Serialize(tater);
+                    IP_Tato testtater = (IP_Tato)Utilities.Deserialize(outboundMessage);
+                    Console.WriteLine("IP_Tato before client sends it. {0}", testtater.ToString());
+
+                    NetworkStream stream = client.GetStream();
+
+                    stream.Write(outboundMessage.Data);
+
+                    Console.WriteLine("Client Sent: {0} Retry #: {1}", tater.ToString(), retries);
+
+                    // Receive the response.
+
+                    // Create Buffer
+                    // The size of the buffer will need to be adapted to the
+                    // Size of the IP_Tato object. --- Until I make a dynamic buffer
+                    Message inboundMessage = new Message();
+                    byte[] buffer = new byte[512];
+
 
                     int bytes = stream.Read(buffer, 0, buffer.Length);
                     inboundMessage.Data = buffer;
@@ -455,3 +517,25 @@ namespace ConsoleSandbox
         }
     }
 }
+
+// Process for picking a potato.
+// Create a list of players -- This will be hardcoded at first.
+
+// --Client actions--
+// Listen for potato.
+// Process Potato.
+// Return potato.
+// * If it were an automatic process this could all be done inside the listener
+
+// --Server Actions--
+// Creating potatoes
+// Distributing Potatoes
+// Sending Potatoes
+// Receiving potatoes
+// 
+
+// Minimum things to do (for an automatic process).
+// Clients listen
+// Server sends the first potato to client
+// Client received potato and processes it before passing it back as a response.
+// Whenever the server receives a non-exploded potato it picks a new client and sends it to them
