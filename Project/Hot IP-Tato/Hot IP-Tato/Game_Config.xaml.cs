@@ -16,13 +16,21 @@ using System.Windows.Shapes;
 namespace Hot_IP_Tato
 {
     /// <summary>
-    /// Interaction logic for Page1.xaml
+    /// Interaction logic for Game_Config.xaml
     /// </summary>
-    public partial class Page1 : Page
+    public partial class Game_Config : Page
     {
-        public Page1()
+        public Game_Config()
         {
             InitializeComponent();
+        }
+        public void Click_Start(object sender, RoutedEventArgs e)
+        {
+            //Collect data from config sliders and stuff
+
+            //Send data to Game_Host
+            Game_Host game_Host = new Game_Host();
+            this.NavigationService.Navigate(game_Host);
         }
     }
 }

@@ -5,10 +5,23 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:Hot_IP_Tato"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      d:DesignHeight="450" d:DesignWidth="450"
       Title="Game_Scoreboard">
 
     <Grid>
-        
+        <StackPanel>
+            <TextBlock></TextBlock>
+            <DataGrid>
+            <!-- ListboxItem for each user-->
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Username" Binding="{Binding Username}"/>
+                    <DataGridTextColumn Header="Score" Binding="{Binding Score}"/>
+                </DataGrid.Columns>
+        </DataGrid>
+        <StackPanel Orientation="Horizontal">
+            <Button>Quit</Button>
+            <Button>Save</Button>
+        </StackPanel>
+        </StackPanel>
     </Grid>
 </Page>

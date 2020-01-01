@@ -1,0 +1,30 @@
+﻿<Page x:Class="Hot_IP_Tato.MainMenu"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:Hot_IP_Tato"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="450"
+      Title="MainMenu">
+
+    <Grid Margin="10,0,10,10" Background="lightgray">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+      <Image Grid.Column="1" Grid.Row="0" Margin="5" Source="potatoes.jpg"></Image>
+        <StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Top" Background="lightgray" Margin="10">
+            <TextBlock FontWeight="Bold" FontSize="30" HorizontalAlignment="Center" Margin="5">Hot IP-Tato</TextBlock>
+            <Button Click="Click_Start">Start</Button>
+            <Button Click="Click_Options">Options</Button>
+            <Button Click="Click_Tests">Tests</Button>
+            <Button Click="Click_Quit">Quit</Button>
+        </StackPanel>
+    </Grid>
+</Page>

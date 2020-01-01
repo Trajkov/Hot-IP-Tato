@@ -12,9 +12,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Hot_IP_Tato.CS_Scripts;
 
-namespace Hot_IP_Tato
+namespace Hot_IP_Tato_Client
 {
     /// <summary>
     /// Interaction logic for Popup.xaml
@@ -22,10 +21,6 @@ namespace Hot_IP_Tato
     public partial class Game_Popup : Window
     {
         public Game_Popup()
-        {
-            InitializeComponent();
-        }
-        public Game_Popup(IPTato ipTato)
         {
             InitializeComponent();
         }
