@@ -10,6 +10,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Timers;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
+using Common;
 
 
 namespace Hot_IP_Tato_Client
@@ -22,134 +24,160 @@ namespace Hot_IP_Tato_Client
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            IP_Tato tater = new IP_Tato();
+            ProcessPotato(tater);
+
+            // HelloPacket clientInfo = new HelloPacket("client", "127.0.0.2", 13000);
             // Start the network listener.
-            StartListener();
+            // Thread ListenerThread = new Thread(()=>StartListener(clientInfo));
+            // ListenerThread.Start();
             // When the listener processes the correct request
             // Create and show the popup.
+            
         }
-        private void StartListener(string address = "127.0.0.1", int port = 13000)
+        // This listener will basically function as the client for most intents and purposes.
+        private static void StartListener(HelloPacket clientInfo)
         {
             TcpListener listener = null;
             try
             {
-                IPAddress localAddr = IPAddress.Parse(address);
-                // Console.WriteLine("Preparing to start a TCP listener at: " + address + " using port # " + port);
 
-                // TcpListener server = new TcpListener(port);
-                listener = new TcpListener(localAddr, port);
-                // Console.WriteLine("listener Created Successfully");
-
-                // Start listening for client requests.
+                Console.WriteLine("IP is {0}", clientInfo.address);
+                IPAddress localip = IPAddress.Parse((clientInfo.address));
+                Console.WriteLine("Starting a tcplistener at {0} using port {1}", localip, clientInfo.port);
+                listener = new TcpListener(localip, clientInfo.port);
                 listener.Start();
-                // Console.WriteLine("listener Started Successfully");
-                Timer checkTimer = new Timer();
-                checkTimer.Interval = 2000;
+                Console.WriteLine("Listener has started.");
 
-                checkTimer.Elapsed += (source, e) => isPending(source, e, listener, checkTimer);
-                // Add in a stop to the timer interval.
-                checkTimer.Enabled = true;
+                // Create Buffer
+                byte[] buffer = new byte[1024];
+
+                while (true)
+                {
+                    // Add an extra space to help distinguish between each server transaction.
+                    Console.WriteLine();
+                    Console.WriteLine("Client wating for a connection... ");
+
+                    // Accept a pending connection
+                    TcpClient client = listener.AcceptTcpClient();
+                    Console.WriteLine("Connected!");
+
+                    // Instantiate the stream
+                    NetworkStream stream = client.GetStream();
+
+                    // While there is data to be read
+                    // TODO: Implement the ability to read more data with a smaller buffer.
+                    while ((stream.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                        try
+                        {
+                            // Instantiate a Message object to hold the incoming object
+                            Message incomingMessage = new Message();
+                            // Assign the data which has been read to incomingMessage
+                            incomingMessage.data = buffer;
+                            // Deserialize the inbound data into an object which can be processed 
+                            //   By the function or workerthread.
+                            IP_Tato receivedTato = Utilities.Deserialize(incomingMessage) as IP_Tato;
+                            // Verify that the server received the correct data
+                            Console.WriteLine("Client Received: " + receivedTato.ToString());
+
+                            Console.WriteLine("Processing Request...");
+
+                            // TODO: Create a worker thread to work with the potato.
+                            //      This will be especially necessary when UI gets involved.
+                            // For now it is just going to call a function
+                            IP_Tato objectResponse = (IP_Tato)ProcessPotato(receivedTato);
+
+                            if (objectResponse.Exploded)
+                            {
+                                // Exact the consequences of an exploded tater
+                            }
+                            else
+                            {
+                                Console.WriteLine($"You have received an IP_Tato from {receivedTato.LastClient}");
+                                Console.WriteLine("Press any key to send the tater back!");
+                                Console.ReadKey();
+                            }
+
+                            // Instantiate a Message to hold the response message
+                            Message responseMessage = new Message();
+                            responseMessage = Utilities.Serialize(objectResponse);
+
+                            // Send back a response.
+                            stream.Write(responseMessage.data, 0, responseMessage.data.Length);
+                            // Verify that the data sent against the client receipt.
+                            Console.WriteLine("Client Sent {0}", objectResponse.ToString());
+                        }
+                        catch (Exception ErrorProcessRequest)
+                        {
+                            Console.WriteLine("The request failed to be processed. Error details: " + ErrorProcessRequest);
+                        }
+
+
+
+
+                        // byte[] msg = System.Text.Encoding.ASCII.GetBytes("Server Received: " + data.ToString());
+
+                    }
+                    Console.WriteLine("---Listener Transaction Closed---");
+                    stream.Close();
+                    client.Close();
+                }
             }
             catch (SocketException e)
             {
-                // Console.WriteLine("SocketException: " + e);
+                Console.WriteLine("Server SocketException: {0}", e);
             }
-
-
-
-            // Console.WriteLine("\nHit enter to continue...");
-            // Console.Read();
-        }
-        public void isPending(Object source, System.Timers.ElapsedEventArgs e, TcpListener server, Timer timer)
-        {
-            //Check to see if any clients are waiting to connect to the server
-            if (!server.Pending())
+            finally
             {
-                // Console.Write(".");
+                listener.Stop();
             }
-            else
+        }
+
+        private static object ProcessPotato(object obj)
+        {
+            // Some of these commands should be placed in the potato object
+            //  Because they then can be protected 
+
+            // Create IP_Tato
+            IP_Tato tater = obj as IP_Tato;
+            // Increment current passes
+            tater.Passes++;
+
+            // Add the current host to the holderHistory
+            // This is done on the client side for pessimism's sake
+            // tater.AddCurrentHostToHolderHistory();
+            // Instead set the previous client to self
+            tater.LastClient = tater.TargetClient;
+
+            // Pseudocode
+            // Check Flags of tater
+            // Do stuff according to the flags on tater
+            // Flags are stored as bools and should be assigned by
+            // * names rather than position.
+            // Flag Precedence is a thing a potato should explode before other things happen.
+
+            // Print last player that tater was passed from
+            // "$player passed a potato to you"
+
+
+            // Check if number of passes is done.
+            // Greater than used to catch too many passes.
+            if (tater.Passes >= tater.TotalPasses)
             {
-                try
-                {
-                    // Buffer for reading data
-                    Byte[] bytes = new Byte[256];
-                    String response = "Server received data.";
-                    //Enter the listening loop.
-                    while (true)
-                    {
-                        // Console.Write("Listening for a connection");
-
-                        // Perform a blocking call to accept requests.
-                        TcpClient client = server.AcceptTcpClient();
-                        // Console.WriteLine("Connected!");
-
-                        // Get a stream object for reading and writing
-                        NetworkStream stream = client.GetStream();
-
-                        // Loop to receive all the data sent by the client.
-                        while ((stream.Read(bytes, 0, bytes.Length)) != 0)
-                        {
-                            // Translate data bytes to a ASCII string.
-                            object request = Deserialize(bytes) as object;
-                            // Console.WriteLine("Server Received: " + request.ToString());
-
-                            try
-                            {
-                                // Console.WriteLine("Processing Request...");
-                                response = "The request was processed successfully";
-                                Game_Popup gpop = new Game_Popup();
-                                gpop.Show();
-                                // Process the request sent by the client.
-                                
-                            }
-                            catch (Exception ErrorProcessRequest)
-                            {
-                                response = "The request failed to be processed. Error details: " + ErrorProcessRequest;
-                            }
-
-                            byte[] msg = System.Text.Encoding.ASCII.GetBytes(response);
-
-                            // Send back a response.
-                            stream.Write(msg, 0, msg.Length);
-                            // Console.WriteLine("Server Sent: " + response);
-                        }
-
-                        // Console.WriteLine("Server has exited while loop.");
-                        // Shutdown and end connection
-
-                        // When closing server for good, the timer should be stopped and/or
-                        // * disposed if the server is completely stopped.
-                        stream.Close();
-                        client.Close();
-                        // Console.WriteLine("Server Connection Closed.");
-                    }
-                }
-                finally
-                {
-                    // Stop listening for new clients.
-                    server.Stop();
-                }
+                tater.Explode();
             }
-
-        }
-        public static Message Serialize(object anySerializableObject)
-        {
-            using (var memoryStream = new MemoryStream())
-            {
-                (new BinaryFormatter()).Serialize(memoryStream, anySerializableObject);
-                return new Message { Data = memoryStream.ToArray() };
-            }
-        }
-        public static object Deserialize(byte[] bytestream)
-        {
-            using (var memoryStream = new MemoryStream(bytestream))
-                return (new BinaryFormatter()).Deserialize(memoryStream);
-        }
-        [SerializableAttribute]
-        public class Message
-        {
-            public byte[] Data;
-            public Message() { }
-            public Message(byte[] Data) { this.Data = Data; }
+            // This will update the GUI with the results of the tater
+            Application.Current.Dispatcher.Invoke((Action)delegate {
+                // Try to update GUI from this thread.
+                Game_Popup game_Popup = new Game_Popup(tater);
+                game_Popup.Show();
+                while()
+                game_Popup.Close();
+            });
+            // Wait for the GUI to return the 
+            
+            return tater as object;
         }
     }
 }

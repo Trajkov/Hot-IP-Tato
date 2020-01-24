@@ -26,23 +26,19 @@ namespace ConsoleSandbox
         // This will also be used when costumes are added.
         public string Name { get; }
         // The state of the potato - alive, dead, exploded, etc.
-        public string State { get; }
+        public bool Exploded { get; set; }
         // How many passes are left before the potato explodes.
         public int totalPasses { get; }
         public int passes { get; set; }
         // The target client which the potato will be sent to.
-        public string targetClient { get; set; }
+        public HelloPacket targetClient { get; set; }
         // The previous client which held the tater.
-        public string lastClient { get; set; }
-        // This is a history of each of the players who have held the potato.
-        public List<string> holderHistory = new List<string>();
-        
+        public HelloPacket lastClient  { get; set; }
+
         // The server which will moderate the game.
         // * Potatoes will be sent to the server to be passed around.
         public string server { get; }
-        // All of the active players
-        // * This will be updated by the server when it is passed into play.
-        public List<string> players = new List<string>();
+        
 
 
 
@@ -50,8 +46,6 @@ namespace ConsoleSandbox
         public IP_Tato()
         {
             this.Name = "Potato";
-            this.server = "127.0.0.1";
-            this.targetClient = "127.0.0.1";
             this.totalPasses = 5;
             this.passes = 0;
         }
@@ -85,19 +79,11 @@ namespace ConsoleSandbox
         {
             // Return flags which are true
         }
-        // 
-        public void AddCurrentHostToHolderHistory()
-        {
-            this.holderHistory.Add(this.targetClient);
-            Console.WriteLine("Added {0} to the end of the holderHistory", targetClient);
-            Console.WriteLine("Contents of holderHistory:");
-            holderHistory.ForEach(Console.WriteLine);
-        }
-
         // This will do the things which the potato should do when it expires.
         public void Explode()
         {
-            Console.WriteLine("\n.\n.\n.\nKABOOOOOOOOOOOOOOOOOM!!!!!!\nIP_Tato {0} has exploded.", this.Name);
+            this.Exploded = true;
+            Console.WriteLine(".\n.\n.\nKABOOOOOOOOOOOOOOOOOM!!!!!!\nIP_Tato {0} has exploded.", this.Name);
         }
         // Passes the potato to the origin 
         public void PassToServer()
@@ -112,7 +98,7 @@ namespace ConsoleSandbox
         public void TestMethods()
         {
             Console.WriteLine("-- Testing Methods within IP_Tato {0} --", this.Name);
-            AddCurrentHostToHolderHistory();
+            
         }
         public override string ToString()
         {
@@ -163,7 +149,7 @@ namespace ConsoleSandbox
         }
     }
     [Serializable]
-    class HelloPacket
+    public class HelloPacket
     {
         public string hostname { get; set; }
         public string address { get; set; }
@@ -185,7 +171,9 @@ namespace ConsoleSandbox
         // TODO: create a class to help manage clients and servers.
         //          It will take a method to process the data (passing the Message object of course).
         //          It would also have to have a modular target.
-
+        // TODO: add in a multicast option for non-tater related information. UDP
+        // TODO: add in hostlist management (the UDP Hello listener would add entries to the list)
+        // TODO: add in hostlist decommisioning 
 
 
         // The maximum value for the listeners will be 254.
@@ -196,7 +184,7 @@ namespace ConsoleSandbox
         static public int listenerMaxNumber = 2;
 
         static public int taterNumber = 1;
-        static public int taterMaxNumber = 5;
+        static public int taterMaxNumber = 2;
 
         // Misc constants to make life easier.
         private const int buffersize = 1024;
@@ -207,16 +195,15 @@ namespace ConsoleSandbox
         static public int totalFails = 0;
         static public int failedConnections = 0;
         // Max attempted clients 12000
-        private const int helloListenPort = 11000;
+        private const int listenPort = 11000;
         // public int IPHostnumber = 1;
         private const int maxClients = 2;
-        static List<string> hostList = new List<string>();
+        static List<HelloPacket> hostList = new List<HelloPacket>();
 
 
         public static void Main(string[] args)
         {
-            UDPHello.Test();
-            // TestUDPHello();
+            Test();
             // TestTater();
             // TestClientandListenerThreads();
             Console.ReadKey();
@@ -243,6 +230,7 @@ namespace ConsoleSandbox
             Console.WriteLine("Deserialized Tater: {0}", newTater.ToString());
 
         }
+        /*
         public static void TestClientandListenerThreads()
         {
             Console.WriteLine("\n\nTesting the Program:");
@@ -251,12 +239,12 @@ namespace ConsoleSandbox
             // Create Threadstarts to the methods.
             // ThreadStart listenerref = new ThreadStart(CallListenerTest);
             Console.WriteLine("In Main: Creating the Listener threads");
-            
+
             Thread[] listenerThreadList = new Thread[listenerMaxNumber];
             for (int x = 0; x < listenerThreadList.Length; x++)
             {
-                Console.WriteLine("Creating Listener {0}", x+1);
-                listenerThreadList[x] = new Thread(() => CallListenerTest(listenerHostNumber++));
+                Console.WriteLine("Creating Listener {0}", x + 1);
+                listenerThreadList[x] = new Thread(() => CallListenerTest()));
                 listenerThreadList[x].IsBackground = true;
                 listenerThreadList[x].Start();
             }
@@ -273,10 +261,11 @@ namespace ConsoleSandbox
             }
             
 
+
             // Create the listener thread.
             // Thread listenerThread = new Thread(listenerref);
             // This makes it so that the program never is stuck open waiting on the listener to shut down.
-            
+
 
             // Keep going on the main thread.
 
@@ -284,30 +273,68 @@ namespace ConsoleSandbox
 
             Console.ReadKey();
         }
-
+        */
         public static void TestUDPHello()
         {
-            int udpListenerNum = 2;
-            // Start up the UDP listener threads
+            int udpClientNum = 2;
+            // Start up the server thread.
+            HelloPacket hello1 = new HelloPacket("server", "127.0.0.1", listenPort);
+            Thread udpserver1 = new Thread(() => StartListener(hello1));
+            udpserver1.Start();
+
+            // Start up the UDP client threads
             Thread[] listenerThreadList = new Thread[listenerMaxNumber];
             for (int x = 0; x < listenerThreadList.Length; x++)
             {
-                Console.WriteLine("Creating UDP Listener {0}", udpListenerNum);
-                HelloPacket clientInfo = new HelloPacket($"client {udpListenerNum}", $"127.0.0.{udpListenerNum}", helloListenPort);
-                Console.WriteLine($"UDP Listener Created: {clientInfo.ToString()}");
-                listenerThreadList[x] = new Thread(() => StartListener(clientInfo));
+                Console.WriteLine("Creating UDP Client {0}", x+1);
+                HelloPacket clientInfo = new HelloPacket($"client {x+1}", $"127.0.0.{udpClientNum}", listenPort);
+                Console.WriteLine($"UDP Client Created: {clientInfo.ToString()}");
+                listenerThreadList[x] = new Thread(() => StartBroadcast(clientInfo));
                 listenerThreadList[x].IsBackground = true;
                 listenerThreadList[x].Start();
-                udpListenerNum++;
+                udpClientNum++;
             }
-            Console.WriteLine("Press any key to continue...");
+        }
+        private static void Test()
+        {
+            Console.WriteLine("\n\nTesting the Program:");
+            int udpClientNum = 2;
+            // Start up the server thread.
+            HelloPacket hello1 = new HelloPacket("server", "127.0.0.1", port);
+            Thread udpserver1 = new Thread(() => StartListener(hello1));
+            udpserver1.Start();
+
+            // Start up the UDP client threads
+            Thread[] clientThreadList = new Thread[listenerMaxNumber];
+            for (int x = 0; x < clientThreadList.Length; x++)
+            {
+                Console.WriteLine("Creating UDP Client {0}", x + 1);
+                HelloPacket clientInfo = new HelloPacket($"client {x + 1}", $"127.0.0.{udpClientNum}", port);
+                Console.WriteLine($"UDP Client Created: {clientInfo.ToString()}");
+                clientThreadList[x] = new Thread(() => StartBroadcast(clientInfo));
+                clientThreadList[x].IsBackground = true;
+                clientThreadList[x].Start();
+                Console.WriteLine("Creating TCP Client {0}", x + 1);
+                clientThreadList[x] = new Thread(() => CallListenerTest(clientInfo));
+                clientThreadList[x].IsBackground = true;
+                clientThreadList[x].Start();
+                udpClientNum++;
+            }
+
+            
+            // Test the Client and Listener Threads
+            
+            Console.WriteLine("Press any key to start the taters...");
             Console.ReadKey();
 
-            // Start up the broadcast thread.
-            HelloPacket hello = new HelloPacket("server", "127.0.0.1", helloListenPort);
-            Thread broadcast1 = new Thread(() => StartBroadcast(hello));
-            broadcast1.Start();
-            //
+            Thread[] taterThreadList = new Thread[taterMaxNumber];
+            for (int x = 0; x < taterThreadList.Length; x++)
+            {
+                Console.WriteLine("Creating IP_Tato server {0}", x + 1);
+                IP_Tato tater = new IP_Tato("Tater #" + x, 5);
+                taterThreadList[x] = new Thread(() => ServerTest(tater));
+                taterThreadList[x].Start();
+            }
         }
         private static void ServerTest(IP_Tato tater)
         {
@@ -316,24 +343,20 @@ namespace ConsoleSandbox
 
             // Add in tater stuff
 
-            
-
-            // These values will actually need to be changed when tater-routing is integrated.
-
-            // This while handles just one tater until it's lifetime expires
+            // Each instance of this method handles just one tater until it's lifetime expires
             // So then really this function is more like a StartTato() method.
-            // Especially once potato routing is a thing.
+            // Especially once potato routing is a thing. - It is a thing now.
 
             // When this all is converted to be OOP, then hostlist may become a part of the server class
-            
-            for (int x = 1; x < listenerMaxNumber+1; x++)
-            {
-                string tempip = "127.0.0." + x;
-                Console.WriteLine("Adding {0} to tater.players", tempip);
-                hostList.Add(tempip);
-            }
-            
-            
+
+            // for (int x = 1; x < listenerMaxNumber + 1; x++)
+            // {
+            //    string tempip = "127.0.0." + x;
+            //    Console.WriteLine("Adding {0} to hostList", tempip);
+            //    hostList.Add(tempip);
+            //}
+
+
 
             while (tater.passes < tater.totalPasses)
             {
@@ -346,10 +369,10 @@ namespace ConsoleSandbox
 
 
                 // Set the values which will be used for each connection
-                IPAddress serveraddress = IPAddress.Parse(tater.targetClient);
+                IPAddress serveraddress = IPAddress.Parse(tater.targetClient.address);
                 int port = 13000;
                 IPEndPoint server = new IPEndPoint(serveraddress, port);
-                // The client is disposed when the connection is closed, so it must be recreated in each loop.
+                
                 TcpClient client = new TcpClient();
 
                 // Initialize the retry counter (which may be overkill)
@@ -384,7 +407,7 @@ namespace ConsoleSandbox
                         // This reads the server's response from the network
                         // It assigns the response byte [] to the buffer.
                         int bytes = stream.Read(inboundMessage.data, 0, inboundMessage.data.Length);
-                        
+
                         // Deserialize the data which was received and create a tater
                         object responseData = Utilities.Deserialize(inboundMessage) as object;
                         tater = responseData as IP_Tato;
@@ -411,25 +434,24 @@ namespace ConsoleSandbox
 
                 }
                 client.Close();
-                
+
             }
             Console.WriteLine("The IP_Tato {0} has exploded.", tater.Name);
         }
 
-        
+
 
         // This listener will basically function as the client for most intents and purposes.
-        public static void CallListenerTest(int ipHostNumber)
+        public static void CallListenerTest(HelloPacket clientInfo)
         {
-            Console.WriteLine("IP host number passed to listener: {0}", ipHostNumber);
             TcpListener listener = null;
             try
             {
-                string ip = "127.0.0." + ipHostNumber;
-                Console.WriteLine("IP is {0}", ip);
-                IPAddress localip = IPAddress.Parse(("127.0.0."+ ipHostNumber));
-                Console.WriteLine("Starting a tcplistener at {0} using port {1}", localip, port);
-                listener = new TcpListener(localip, port);
+                
+                Console.WriteLine("IP is {0}", clientInfo.address);
+                IPAddress localip = IPAddress.Parse((clientInfo.address));
+                Console.WriteLine("Starting a tcplistener at {0} using port {1}", localip, clientInfo.port);
+                listener = new TcpListener(localip, clientInfo.port);
                 listener.Start();
                 Console.WriteLine("Listener has started.");
 
@@ -438,8 +460,6 @@ namespace ConsoleSandbox
 
                 while (true)
                 {
-                    // TODO Add in differentiation of messages - potatoes and networking business.
-
                     // Add an extra space to help distinguish between each server transaction.
                     Console.WriteLine();
                     Console.WriteLine("Client wating for a connection... ");
@@ -447,7 +467,7 @@ namespace ConsoleSandbox
                     // Accept a pending connection
                     TcpClient client = listener.AcceptTcpClient();
                     Console.WriteLine("Connected!");
-                    
+
                     // Instantiate the stream
                     NetworkStream stream = client.GetStream();
 
@@ -463,20 +483,27 @@ namespace ConsoleSandbox
                             incomingMessage.data = buffer;
                             // Deserialize the inbound data into an object which can be processed 
                             //   By the function or workerthread.
-                            object request = Utilities.Deserialize(incomingMessage) as object;
+                            IP_Tato receivedTato = Utilities.Deserialize(incomingMessage) as IP_Tato;
                             // Verify that the server received the correct data
-                            Console.WriteLine("Client Received: " + request.ToString());
+                            Console.WriteLine("Client Received: " + receivedTato.ToString());
 
                             Console.WriteLine("Processing Request...");
-                            
+
                             // TODO: Create a worker thread to work with the potato.
                             //      This will be especially necessary when UI gets involved.
                             // For now it is just going to call a function
-                            object objectResponse = ProcessPotato(request);
-                            Thread.Sleep(100);
+                            IP_Tato objectResponse = (IP_Tato)ProcessPotato(receivedTato);
 
-
-
+                            if(objectResponse.Exploded)
+                            {
+                                // Exact the consequences of an exploded tater
+                            } else
+                            {
+                                Console.WriteLine($"You have received an IP_Tato from {receivedTato.lastClient}");
+                                Console.WriteLine("Press any key to send the tater back!");
+                                Console.ReadKey();
+                            }
+                            
                             // Instantiate a Message to hold the response message
                             Message responseMessage = new Message();
                             responseMessage = Utilities.Serialize(objectResponse);
@@ -493,12 +520,7 @@ namespace ConsoleSandbox
 
 
 
-                        /*
-                        if (data.Contains("HERRO, THIS IS DOG #"+totalClients))
-                        {
-                            showClientTelemetry();
-                        }
-                        */
+                        
                         // byte[] msg = System.Text.Encoding.ASCII.GetBytes("Server Received: " + data.ToString());
 
                     }
@@ -526,6 +548,7 @@ namespace ConsoleSandbox
             IP_Tato tater = obj as IP_Tato;
             // Increment current passes
             tater.passes++;
+            
             // Add the current host to the holderHistory
             // This is done on the client side for pessimism's sake
             // tater.AddCurrentHostToHolderHistory();
@@ -552,7 +575,7 @@ namespace ConsoleSandbox
             return tater as object;
         }
         // lastClient may not be needed, but this class will be expanded to include other routing protocols
-        public static string RouteTater(List<string> hostList, string lastClient)
+        public static HelloPacket RouteTater(List<HelloPacket> hostList, HelloPacket lastClient)
         {
             // This method could include a using statement like what is used in Serialize
 
@@ -560,7 +583,7 @@ namespace ConsoleSandbox
             // Not the best, because it is entirely dependant on the size of the host list
             int rolls = 0;
             Random random = new Random();
-            string newTargetClient;
+            HelloPacket newTargetClient;
             do
             {
                 newTargetClient = hostList[random.Next(hostList.ToArray().Length)];
@@ -574,33 +597,47 @@ namespace ConsoleSandbox
         // This is the UDP listener which listens for the hello broadcast.
         // It will then start a tcp client to reply to the server.
         // TCP is required for the response to ensure connection.
-        private static void StartListener(HelloPacket clientInfo)
+        
+
+        // This is the UDP listener which listens for the hello broadcast.
+        private static void StartListener(HelloPacket serverInfo)
         {
-            //IPEndPoint listenEP = new IPEndPoint(IPAddress.Parse(clientInfo.address), helloListenPort);
+            Console.WriteLine($"Creating server listener {serverInfo.ToString()}");
+            //IPEndPoint listenEP = new IPEndPoint(IPAddress.Parse(clientInfo.address), listenPort);
             //UdpClient listener = new UdpClient(listenEP);
-            //IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, helloListenPort);
-            UdpClient listener = new UdpClient(helloListenPort);
-            IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, helloListenPort);
+            //IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, listenPort);
+            UdpClient server = new UdpClient(listenPort);
+            Message responseData = Utilities.Serialize(serverInfo);
+
             try
             {
                 while (true)
                 {
+
                     Console.WriteLine("Waiting for broadcast");
                     // The groupEP gets the IP address needed for the RSVP
                     // So I could just send the port as a string, but what if some other program is using this port?
                     // Then with that an object may be best.
+
+                    IPEndPoint clientEP = new IPEndPoint(IPAddress.Any, 0);
                     Message message = new Message();
-                    message.data = listener.Receive(ref groupEP);
+                    message.data = server.Receive(ref clientEP);
 
-                    HelloPacket serverData = Utilities.Deserialize(message) as HelloPacket;
+                    HelloPacket receivedData = (HelloPacket)Utilities.Deserialize(message);
 
-                    Console.WriteLine($"Received broadcast from {groupEP} :");
-                    Console.WriteLine($" RSVP address {serverData.ToString()}");
+                    Console.WriteLine($"Received broadcast from {clientEP} :");
+                    Console.WriteLine($" RSVP address {receivedData.ToString()}");
 
+                    // Add client to the hostList
+                    Console.WriteLine("Adding {0} to hostList", receivedData.ToString());
+                    hostList.Add(receivedData);
 
+                    // Send the server data to the client
+                    Console.WriteLine("Server sending response");
+                    server.Send(responseData.data, responseData.data.Length, clientEP);
 
                     // Start TCP client (separate function I guess).
-                    StartTCPClient(clientInfo, serverData);
+                    // StartTCPClient(clientInfo, serverData);
                 }
             }
             catch (SocketException e)
@@ -609,162 +646,37 @@ namespace ConsoleSandbox
             }
             finally
             {
-                listener.Close();
+                server.Close();
             }
         }
 
-        // This is the UDP broadcast which will discover IP_Tato Clients on the network.
+        // This is the UDP broadcast which will discover IP_Tato Servers on the network.
         // Stuff will have to be done for subnetting
-        public static void StartBroadcast(HelloPacket callbackServer)
+        public static void StartBroadcast(HelloPacket thisHost)
         {
-            Thread BroadcastResponseListener = new Thread(() => StartTCPListener(callbackServer));
+            // Thread BroadcastResponseListener = new Thread(() => StartTCPListener(thisHost));
             // BroadcastResponseListener.Start();
-            Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            Console.WriteLine();
+            // Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            // Console.WriteLine();
 
-            IPAddress broadcast = IPAddress.Parse("127.0.0.255");
+            UdpClient Client = new UdpClient();
+            Message request = new Message();
+            request = Utilities.Serialize(thisHost);
 
+            IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, 0);
 
-            Message message = new Message();
-            message = Utilities.Serialize(callbackServer);
-            IPEndPoint ep = new IPEndPoint(broadcast, helloListenPort);
-
-            s.SendTo(message.data, ep);
+            Client.EnableBroadcast = true;
+            Client.Send(request.data, request.data.Length, new IPEndPoint(IPAddress.Broadcast, listenPort));
 
             Console.WriteLine("Message sent to the broadcast address");
-        }
-        // This listener will listen for the response to the UDP broadcast 
-        //  and finalize the setup of the client
-        public static void StartTCPListener(HelloPacket server)
-        {
-            // This will be very similar to the client listener from the main program.
-            Console.WriteLine("Starting TCP Listener for responses to Broadcast");
-            TcpListener listener = null;
-            try
-            {
+            Message responseMessage = new Message(256);
+            // s.Receive(responseMessage.data);
 
-                Console.WriteLine("IP is {0}", server.address);
-                IPAddress localip = IPAddress.Parse((server.address));
-                Console.WriteLine("Starting a tcplistener at {0} using port {1}", localip, server.port);
-                listener = new TcpListener(localip, server.port);
-                listener.Start();
-                Console.WriteLine("Listener has started.");
+            responseMessage.data = Client.Receive(ref serverEP);
+            HelloPacket responseData = (HelloPacket)Utilities.Deserialize(responseMessage);
+            Console.WriteLine($"Received respone from {responseData.ToString()}");
 
-                // Create Buffer
-                byte[] buffer = new byte[256];
-
-                while (true)
-                {
-                    // Add an extra space to help distinguish between each server transaction.
-                    Console.WriteLine("Response listener wating for a connection... ");
-
-                    // Accept a pending connection
-                    TcpClient client = listener.AcceptTcpClient();
-                    Console.WriteLine("Connected!");
-
-                    // Instantiate the stream
-                    NetworkStream stream = client.GetStream();
-
-                    // While there is data to be read
-                    while ((stream.Read(buffer, 0, buffer.Length)) != 0)
-                    {
-                        try
-                        {
-                            // Instantiate a Message object to hold the incoming object
-                            Message incomingMessage = new Message();
-                            // Assign the data which has been read to incomingMessage
-                            incomingMessage.data = buffer;
-                            // Deserialize the inbound data into an object which can be processed 
-                            //   By the function or workerthread.
-                            HelloPacket request = Utilities.Deserialize(incomingMessage) as HelloPacket;
-                            // Verify that the server received the correct data
-                            Console.WriteLine("Client Received: " + request.ToString());
-
-                            Console.WriteLine("Processing Request...");
-                            // Add the client to the list of hosts
-                            hostList.Add(request.address);
-
-
-
-                            // Instantiate a Message to hold the response message
-                            Message responseMessage = new Message();
-                            string response = $"Client {request.ToString()} has been added to hostlist";
-                            responseMessage.data = System.Text.ASCIIEncoding.ASCII.GetBytes(response);
-
-                            // Send back a response.
-                            stream.Write(responseMessage.data, 0, responseMessage.data.Length);
-
-                            Console.WriteLine("Response Server Sent {0}", response.ToString());
-                        }
-                        catch (Exception ErrorProcessRequest)
-                        {
-                            Console.WriteLine("The request failed to be processed. Error details: " + ErrorProcessRequest);
-                        }
-                    }
-                    Console.WriteLine("---Listener Transaction Closed---");
-                    stream.Close();
-                    client.Close();
-                }
-            }
-            catch (SocketException e)
-            {
-                Console.WriteLine("Server SocketException: {0}", e);
-            }
-            finally
-            {
-                listener.Stop();
-            }
-        }
-
-        public static void StartTCPClient(HelloPacket clientInfo, HelloPacket server)
-        {
-
-            IPAddress serveraddress = IPAddress.Parse(server.address);
-            int port = server.port;
-            IPEndPoint serverEP = new IPEndPoint(serveraddress, port);
-            TcpClient client = new TcpClient();
-            try
-            {
-
-                client.Connect(serverEP);
-
-                // Serialize the message
-
-
-                // Serialize the object
-                Message outboundMessage = Utilities.Serialize(clientInfo);
-
-
-                NetworkStream stream = client.GetStream();
-
-                stream.Write(outboundMessage.data);
-
-                Console.WriteLine("Client Sent: {0}", clientInfo.ToString());
-
-                // Receive the response.
-
-                // Create Buffer
-                // The size of the buffer will need to be adapted to the
-                // Size of the IP_Tato object. --- Until I make a dynamic buffer
-                Message inboundMessage = new Message();
-                byte[] buffer = new byte[256];
-
-
-                int bytes = stream.Read(buffer, 0, buffer.Length);
-                inboundMessage.data = buffer;
-                Console.WriteLine("Client received: {0}", System.Text.ASCIIEncoding.ASCII.GetString(inboundMessage.data));
-
-                stream.Close();
-            }
-            catch (ArgumentNullException e)
-            {
-                Console.WriteLine("Client ArgumentNullException: {0}", e);
-            }
-            catch (SocketException e)
-            {
-                Console.WriteLine("Client SocketException: {0}", e);
-            }
-            client.Close();
+            Client.Close();
         }
 
         // UNUSED CODE BELOW
@@ -793,92 +705,6 @@ namespace ConsoleSandbox
             {
                 Console.WriteLine(e.Message);
             }
-        }
-        private static void ClientPassTater(IP_Tato tater)
-        {
-            // TODO Add in a test over a network connection (to verify how much it can handle)
-            // TODO Figure out how to negate Denial of Service Attacks.
-
-            IPAddress serveraddress = IPAddress.Parse("127.0.0.1");
-            int port = 13000;
-            IPEndPoint server = new IPEndPoint(serveraddress, port);
-            TcpClient client = new TcpClient();
-
-            int retries;
-            for (retries = 0; retries < 5; retries++)
-            {
-                try
-                {
-
-                    client.Connect(server);
-
-                    string message = "Herro, this is dog #" + " Retry #" + retries;
-
-                    // Serialize the message
-
-
-                    // Serialize the object
-                    Message outboundMessage = Utilities.Serialize(tater);
-                    IP_Tato testtater = (IP_Tato)Utilities.Deserialize(outboundMessage);
-                    Console.WriteLine("IP_Tato before client sends it. {0}", testtater.ToString());
-
-                    NetworkStream stream = client.GetStream();
-
-                    stream.Write(outboundMessage.data);
-
-                    Console.WriteLine("Client Sent: {0} Retry #: {1}", tater.ToString(), retries);
-
-                    // Receive the response.
-
-                    // Create Buffer
-                    // The size of the buffer will need to be adapted to the
-                    // Size of the IP_Tato object. --- Until I make a dynamic buffer
-                    Message inboundMessage = new Message();
-                    byte[] buffer = new byte[buffersize];
-
-
-                    int bytes = stream.Read(buffer, 0, buffer.Length);
-                    inboundMessage.data = buffer;
-                    object responseData = Utilities.Deserialize(inboundMessage) as object;
-                    IP_Tato newtater = responseData as IP_Tato;
-                    Console.WriteLine("Client received: {0}", newtater.ToString());
-
-                    stream.Close();
-                    totalretries = totalretries + retries;
-                    break;
-                }
-                catch (ArgumentNullException e)
-                {
-                    Console.WriteLine("Client ArgumentNullException: {0}", e);
-                    continue;
-                }
-                catch (SocketException e)
-                {
-                    Console.WriteLine("Client SocketException: {0}", e);
-                    continue;
-                }
-
-            }
-            client.Close();
-            if (retries > 4)
-            {
-                totalFails++;
-            }
-            // Moved telemetry display to server
-        }
-        public static void showClientTelemetry()
-        {
-            Console.WriteLine("\n\nTest concluded with the following telemetry:");
-            Console.WriteLine("Total number of retries: {0}", totalretries);
-            Console.WriteLine("Total failed client requests (too many retries): {0}", totalFails);
-            /*
-            Console.WriteLine("Retries per each amount:");
-            int i;
-            for(i = 0; i<retryByNumber.Length; i++)
-            {
-                Console.WriteLine("\t{0} retries: {1}", i, retryByNumber[i]);
-            }
-            */
         }
     }
 }

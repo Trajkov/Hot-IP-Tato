@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Hot_IP_Tato.CS_Scripts;
+using IP_Tato;
 
 namespace Hot_IP_Tato
 {
@@ -25,7 +26,7 @@ namespace Hot_IP_Tato
         {
             InitializeComponent();
         }
-        public Game_Popup(IPTato ipTato)
+        public Game_Popup(IP_Tato.IP_Tato ipTato)
         {
             InitializeComponent();
         }

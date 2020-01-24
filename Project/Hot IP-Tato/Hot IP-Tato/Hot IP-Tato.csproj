@@ -61,6 +61,7 @@
     </Compile>
     <Compile Include="CS Scripts\IPTato.cs" />
     <Compile Include="CS Scripts\PopupLogic.cs" />
+    <Compile Include="IPTato.cs" />
     <Compile Include="Utilities\AsyncSocket.cs" />
     <Compile Include="Utilities\TextBoxOutputter.cs" />
     <Compile Include="TestPage.xaml.cs">

@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Common;
 
 namespace Hot_IP_Tato_Client
 {
@@ -20,13 +21,28 @@ namespace Hot_IP_Tato_Client
     /// </summary>
     public partial class Game_Popup : Window
     {
-        public Game_Popup()
+        public Game_Popup(IP_Tato tater)
         {
             InitializeComponent();
+            this.DataContext = this;
+            string whoSentText = $"{tater.TargetClient.hostname} has sent you a Hot IP_Tato";
+            Binding binding = new Binding();
+            binding.Source = whoSentText;
+            txtWhoSentTater.SetBinding(TextBlock.TextProperty, binding);
         }
-        public void Start()
+        public bool subscribe()
         {
-            this.Show();
+            btnPassPotato.Click += new RoutedEventHandler(btnPassPotato_Click);
+            return true;
+        }
+        private void btnPassPotato_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
+        private void btnUpdateSource_Click(object sender, RoutedEventArgs e)
+        {
+            // BindingExpression binding = txtWindowTitle.GetBindingExpression(TextBox.TextProperty);
+            // binding.UpdateSource();
         }
     }
     /* * Pseudocode logic for Popup
