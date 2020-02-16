@@ -8,17 +8,19 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotIP-TatoTests", "HotIP-TatoTests\HotIP-TatoTests.csproj", "{7C74E5C5-2E74-435A-86C7-02F6AC5DB299}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleSandbox", "ConsoleSandbox\ConsoleSandbox.csproj", "{6E175E29-B215-4453-96D7-462AF9F7A144}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A} = {5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hot IP-Tato Client", "Hot IP-Tato Client\Hot IP-Tato Client.csproj", "{D723CC6F-0E83-4731-8346-4EE9501788E1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hot IP-Tato-Client", "Hot IP-Tato-Client\Hot IP-Tato-Client.csproj", "{B02123E3-9220-493C-A5C7-139EED0B91D4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6E305E94-3FE8-44AF-B866-FFB3D969E9BB}"
-	ProjectSection(SolutionItems) = preProject
-		Common.cs = Common.cs
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NewFolder1", "NewFolder1", "{D4ECA87B-E083-49FC-A557-19F20ADCAFE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "CommonLibrary\CommonLibrary.csproj", "{5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,9 +48,16 @@ Global
 		{B02123E3-9220-493C-A5C7-139EED0B91D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B02123E3-9220-493C-A5C7-139EED0B91D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B02123E3-9220-493C-A5C7-139EED0B91D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5AB836A8-2A2F-4DEA-8DDF-DEE2C104E58A} = {6E305E94-3FE8-44AF-B866-FFB3D969E9BB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {ACE198E8-D994-41C2-8F64-FB5CD04F33C6}

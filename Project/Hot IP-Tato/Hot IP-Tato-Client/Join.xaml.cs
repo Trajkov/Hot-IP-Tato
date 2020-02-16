@@ -1,56 +1,83 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 using System.Net;
 using System.Net.Sockets;
-using System.Timers;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using Common;
-
 
 namespace Hot_IP_Tato_Client
 {
     /// <summary>
-    /// Interaction logic for App.xaml
+    /// Interaction logic for Page1.xaml
     /// </summary>
-    public partial class App : Application
+    public partial class Join : Page
     {
-        [STAThread]
-        public static void Main()
+        HelloPacket clientInfo;
+        public Join()
         {
-            Console.WriteLine("Main is run");
-            var app = new App();
-            app.InitializeComponent();
-            app.Run();
+            clientInfo = new HelloPacket("client", Utilities.getExternalIPE(), 13000);
+            InitializeComponent();
         }
-        private void Application_Startup()
+
+        private void btn_Cancel_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("Application Startup has been called.");
-            // TODO: add in a config screen which will update the client information.
-            // IP_Tato tater = new IP_Tato();
-            // ProcessPotato(tater);
+            // Clean up everything.
+            NavigationService.Navigate(new Uri("MainMenu.xaml", UriKind.Relative));
+        }
 
-            HelloPacket clientInfo = new HelloPacket("client", Utilities.getExternalIPE(), 13000);
-
+        private void btn_Refresh_Click(object sender, RoutedEventArgs e)
+        {
             // Start the network discovery
             Console.WriteLine("Starting the UDP Broadcast at {0}", clientInfo.ToString());
             Thread UDPBroadcast = new Thread(() => StartBroadcast(clientInfo));
             UDPBroadcast.Start();
-
-            // Start the network listener.
-            Thread ListenerThread = new Thread(()=>StartListener(clientInfo));
-            ListenerThread.Start();
-            // When the listener processes the correct request
-            // Create and show the popup.
-            
         }
-        // This listener will basically function as the client for most intents and purposes.
+
+        private void btn_Join_Click(object sender, RoutedEventArgs e)
+        {
+            // Start the network listener.
+            Thread ListenerThread = new Thread(() => Client.Listen(clientInfo));
+            ListenerThread.Start();
+        }
+
+        public static void StartBroadcast(HelloPacket thisHost)
+        {
+            // Thread BroadcastResponseListener = new Thread(() => StartTCPListener(thisHost));
+            // BroadcastResponseListener.Start();
+            // Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            // Console.WriteLine();
+
+            UdpClient Client = new UdpClient();
+            Message request = new Message();
+            request = Utilities.Serialize(thisHost);
+
+            IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, 0);
+
+            Client.EnableBroadcast = true;
+            Client.Send(request.data, request.data.Length, new IPEndPoint(IPAddress.Broadcast, 13000));
+
+            Console.WriteLine("Message sent to the broadcast address");
+            Message responseMessage = new Message(256);
+            // s.Receive(responseMessage.data);
+
+            responseMessage.data = Client.Receive(ref serverEP);
+            HelloPacket responseData = (HelloPacket)Utilities.Deserialize(responseMessage);
+            Console.WriteLine($"Received respone from {responseData.ToString()}");
+
+            Client.Close();
+        }
         private static void StartListener(HelloPacket clientInfo)
         {
             TcpListener listener = null;
@@ -101,7 +128,7 @@ namespace Hot_IP_Tato_Client
                             //      This will be especially necessary when UI gets involved.
                             // For now it is just going to call a function
                             IP_Tato objectResponse = (IP_Tato)ProcessPotato(receivedTato);
-                            
+
 
                             // Instantiate a Message to hold the response message
                             Message responseMessage = new Message();
@@ -132,7 +159,6 @@ namespace Hot_IP_Tato_Client
                 listener.Stop();
             }
         }
-
         private static object ProcessPotato(object obj)
         {
             // Some of these commands should be placed in the potato object
@@ -140,7 +166,7 @@ namespace Hot_IP_Tato_Client
 
             // Create IP_Tato
             IP_Tato tater = obj as IP_Tato;
-            
+
 
             // Add the current host to the holderHistory
             // This is done on the client side for pessimism's sake
@@ -167,15 +193,10 @@ namespace Hot_IP_Tato_Client
             }
             // This will update the GUI with the results of the tater
             Application app = Application.Current;
-            if (app == null)
-            {
-                Main();
-                app = Current;
-            }
             app.Dispatcher.Invoke((Action)delegate {
                 // Try to update GUI from this thread.
                 Game_Popup game_Popup = new Game_Popup(tater);
-                
+
                 // The ShowDialog is the perfect function for this.
                 // It blocks until the window is closed which is all I needed it to do.
                 game_Popup.ShowDialog();
@@ -185,33 +206,6 @@ namespace Hot_IP_Tato_Client
             tater.Passes++;
 
             return tater as object;
-        }
-
-        public static void StartBroadcast(HelloPacket thisHost)
-        {
-            // Thread BroadcastResponseListener = new Thread(() => StartTCPListener(thisHost));
-            // BroadcastResponseListener.Start();
-            // Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            // Console.WriteLine();
-
-            UdpClient Client = new UdpClient();
-            Message request = new Message();
-            request = Utilities.Serialize(thisHost);
-
-            IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, 0);
-
-            Client.EnableBroadcast = true;
-            Client.Send(request.data, request.data.Length, new IPEndPoint(IPAddress.Broadcast, 13000));
-
-            Console.WriteLine("Message sent to the broadcast address");
-            Message responseMessage = new Message(256);
-            // s.Receive(responseMessage.data);
-
-            responseMessage.data = Client.Receive(ref serverEP);
-            HelloPacket responseData = (HelloPacket)Utilities.Deserialize(responseMessage);
-            Console.WriteLine($"Received respone from {responseData.ToString()}");
-
-            Client.Close();
         }
     }
 }

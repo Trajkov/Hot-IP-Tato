@@ -10,162 +10,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using Common;
 
 namespace ConsoleSandbox
 {
-    [Serializable]
-    public class IP_Tato
-    {
-        // Flavors of IPTato
-
-        // TODO: Add in flag parameter constructor.
-        // TODO: Add in a way to have a count of passes persist.
-        // TODO: Actually use the targetClient Variable.
-
-        // This is a nickname for the potato
-        // This will also be used when costumes are added.
-        public string Name { get; }
-        // The state of the potato - alive, dead, exploded, etc.
-        public bool Exploded { get; set; }
-        // How many passes are left before the potato explodes.
-        public int totalPasses { get; }
-        public int passes { get; set; }
-        // The target client which the potato will be sent to.
-        public HelloPacket targetClient { get; set; }
-        // The previous client which held the tater.
-        public HelloPacket lastClient  { get; set; }
-
-        // The server which will moderate the game.
-        // * Potatoes will be sent to the server to be passed around.
-        public string server { get; }
-        
-
-
-
-
-        public IP_Tato()
-        {
-            this.Name = "Potato";
-            this.totalPasses = 5;
-            this.passes = 0;
-        }
-        public IP_Tato(string name)
-        {
-            this.Name = name;
-        }
-        // public IP_Tato(Byte[] serializedTater)
-        // {
-        // This constructor will eventually utilize the deserialize method
-        //  and build a tater from the byte array
-        // I don't know how to have it create itself without creating one,
-        //  It might just create a tater and then assign it all of the things which
-        //   The byte array contains. (but it would be nice if I could just deserialize here.
-        // }
-
-        // This constructor is for the server.
-        public IP_Tato(string name, int totalPasses = 5)
-        {
-            this.Name = name;
-            this.totalPasses = totalPasses;
-            this.passes = 0;
-            var flagList = new List<KeyValuePair<string, bool>>()
-            {
-
-            };
-        }
-
-        // This method checks a bunch of flags which can be applied to the object.
-        public void CheckFlags()
-        {
-            // Return flags which are true
-        }
-        // This will do the things which the potato should do when it expires.
-        public void Explode()
-        {
-            this.Exploded = true;
-            Console.WriteLine(".\n.\n.\nKABOOOOOOOOOOOOOOOOOM!!!!!!\nIP_Tato {0} has exploded.", this.Name);
-        }
-        // Passes the potato to the origin 
-        public void PassToServer()
-        {
-
-        }
-        // Passes the potato to another member of the group
-        public void PassOnInGroup()
-        {
-
-        }
-        public void TestMethods()
-        {
-            Console.WriteLine("-- Testing Methods within IP_Tato {0} --", this.Name);
-            
-        }
-        public override string ToString()
-        {
-            string toString = null;
-            toString = base.ToString();
-            foreach (var x in this.GetType().GetProperties())
-            {
-                if (x.GetValue(this) != null)
-                {
-                    // Add to ToString
-                    toString += "\n " + x.Name + " "
-                        + x.GetValue(this);
-                }
-            }
-            return toString;
-        }
-        // **Manipulators for Objects**
-        // Process for the process:
-        // * 
-    }
-    public class Message
-    {
-        public Byte[] data { get; set; }
-
-        public Message() { }
-        public Message(int buffersize)
-        {
-            this.data = new Byte[buffersize];
-        }
-    }
-    public static class Utilities
-    {
-        public static Message Serialize(object anySerializableObject)
-        {
-            using (var memoryStream = new MemoryStream())
-            {
-                (new BinaryFormatter()).Serialize(memoryStream, anySerializableObject);
-                return new Message { data = memoryStream.ToArray() };
-            }
-
-        }
-        public static object Deserialize(Message message)
-        {
-            using (var memoryStream = new MemoryStream(message.data))
-            {
-                return (new BinaryFormatter()).Deserialize(memoryStream);
-            }
-        }
-    }
-    [Serializable]
-    public class HelloPacket
-    {
-        public string hostname { get; set; }
-        public string address { get; set; }
-        public int port { get; set; }
-
-        public HelloPacket(string hostname, string address, int port)
-        {
-            this.hostname = hostname;
-            this.address = address;
-            this.port = port;
-        }
-        public override string ToString()
-        {
-            return $"{hostname}@{address}:{port}";
-        }
-    }
     class Program
     {
         // TODO: create a class to help manage clients and servers.
@@ -184,7 +32,7 @@ namespace ConsoleSandbox
         static public int listenerMaxNumber = 2;
 
         static public int taterNumber = 1;
-        static public int taterMaxNumber = 2;
+        static public int taterMaxNumber = 3;
 
         // Misc constants to make life easier.
         private const int buffersize = 1024;
@@ -195,7 +43,7 @@ namespace ConsoleSandbox
         static public int totalFails = 0;
         static public int failedConnections = 0;
         // Max attempted clients 12000
-        private const int listenPort = 11000;
+        private const int listenPort = 13000;
         // public int IPHostnumber = 1;
         private const int maxClients = 2;
         static List<HelloPacket> hostList = new List<HelloPacket>();
@@ -203,11 +51,42 @@ namespace ConsoleSandbox
 
         public static void Main(string[] args)
         {
-            Test();
+            Start();
+            // Test();
             // TestTater();
             // TestClientandListenerThreads();
             Console.ReadKey();
         }
+
+        public static void Start()
+        {
+            // Start the network discovery server.
+            HelloPacket hello = new HelloPacket("server", Utilities.getExternalIPE(), port);
+            Thread udpserver = new Thread(() => StartListener(hello));
+            udpserver.Start();
+
+            Console.WriteLine("Length of Hostlist: {0}", hostList.ToArray().Length);
+
+            Console.WriteLine("Press any key to start the server");
+            Console.ReadKey();
+
+            // Start the Tcp Server and send the first tater
+            // IP_Tato tater = new IP_Tato("Tater #1", 5);
+
+            Thread[] taterThreadList = new Thread[taterMaxNumber];
+            for (int x = 0; x < taterThreadList.Length; x++)
+            {
+                Console.WriteLine("Creating IP_Tato server {0}", x + 1);
+                IP_Tato tater = new IP_Tato("Tater #" + x, 5);
+                taterThreadList[x] = new Thread(() => ServerTest(tater));
+                taterThreadList[x].Start();
+            }
+
+            // Thread tcpserver = new Thread(() => ServerTest(tater));
+            // tcpserver.Start();
+        }
+            
+
         public static void TestTater()
         {
             // Test IP_Tato Object
@@ -358,18 +237,18 @@ namespace ConsoleSandbox
 
 
 
-            while (tater.passes < tater.totalPasses)
+            while (tater.Passes < tater.TotalPasses)
             {
                 // Choose a targetClient
 
-                tater.targetClient = RouteTater(hostList, tater.lastClient);
+                tater.TargetClient = RouteTater(hostList, tater.LastClient);
 
-                Console.WriteLine("The new targetClient is: {0}", tater.targetClient);
+                Console.WriteLine("The new targetClient is: {0}", tater.TargetClient);
 
 
 
                 // Set the values which will be used for each connection
-                IPAddress serveraddress = IPAddress.Parse(tater.targetClient.address);
+                IPAddress serveraddress = IPAddress.Parse(tater.TargetClient.address);
                 int port = 13000;
                 IPEndPoint server = new IPEndPoint(serveraddress, port);
                 
@@ -499,7 +378,7 @@ namespace ConsoleSandbox
                                 // Exact the consequences of an exploded tater
                             } else
                             {
-                                Console.WriteLine($"You have received an IP_Tato from {receivedTato.lastClient}");
+                                Console.WriteLine($"You have received an IP_Tato from {receivedTato.LastClient}");
                                 Console.WriteLine("Press any key to send the tater back!");
                                 Console.ReadKey();
                             }
@@ -547,13 +426,13 @@ namespace ConsoleSandbox
             // Create IP_Tato
             IP_Tato tater = obj as IP_Tato;
             // Increment current passes
-            tater.passes++;
+            tater.Passes++;
             
             // Add the current host to the holderHistory
             // This is done on the client side for pessimism's sake
             // tater.AddCurrentHostToHolderHistory();
             // Instead set the previous client to self
-            tater.lastClient = tater.targetClient;
+            tater.LastClient = tater.TargetClient;
 
             // Pseudocode
             // Check Flags of tater
@@ -568,7 +447,7 @@ namespace ConsoleSandbox
 
             // Check if number of passes is done.
             // Greater than used to catch too many passes.
-            if (tater.passes >= tater.totalPasses)
+            if (tater.Passes >= tater.TotalPasses)
             {
                 tater.Explode();
             }
@@ -584,12 +463,12 @@ namespace ConsoleSandbox
             int rolls = 0;
             Random random = new Random();
             HelloPacket newTargetClient;
-            do
-            {
+            //do
+            //{
                 newTargetClient = hostList[random.Next(hostList.ToArray().Length)];
                 rolls++;
-            }
-            while (newTargetClient == lastClient);
+            //}
+            // while (newTargetClient == lastClient);
             Console.WriteLine("New targetClient {0} chosen after {1} roll(s)", newTargetClient, rolls);
             return newTargetClient;
         }
@@ -602,7 +481,7 @@ namespace ConsoleSandbox
         // This is the UDP listener which listens for the hello broadcast.
         private static void StartListener(HelloPacket serverInfo)
         {
-            Console.WriteLine($"Creating server listener {serverInfo.ToString()}");
+            Console.WriteLine($"Creating UDP server listener {serverInfo.ToString()}");
             //IPEndPoint listenEP = new IPEndPoint(IPAddress.Parse(clientInfo.address), listenPort);
             //UdpClient listener = new UdpClient(listenEP);
             //IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, listenPort);
@@ -614,7 +493,7 @@ namespace ConsoleSandbox
                 while (true)
                 {
 
-                    Console.WriteLine("Waiting for broadcast");
+                    Console.WriteLine("UDP Waiting for broadcast");
                     // The groupEP gets the IP address needed for the RSVP
                     // So I could just send the port as a string, but what if some other program is using this port?
                     // Then with that an object may be best.
@@ -623,7 +502,7 @@ namespace ConsoleSandbox
                     Message message = new Message();
                     message.data = server.Receive(ref clientEP);
 
-                    HelloPacket receivedData = (HelloPacket)Utilities.Deserialize(message);
+                    HelloPacket receivedData = Utilities.Deserialize(message) as HelloPacket;
 
                     Console.WriteLine($"Received broadcast from {clientEP} :");
                     Console.WriteLine($" RSVP address {receivedData.ToString()}");
@@ -633,7 +512,7 @@ namespace ConsoleSandbox
                     hostList.Add(receivedData);
 
                     // Send the server data to the client
-                    Console.WriteLine("Server sending response");
+                    Console.WriteLine("UDP Server sending response");
                     server.Send(responseData.data, responseData.data.Length, clientEP);
 
                     // Start TCP client (separate function I guess).
