@@ -11,23 +11,26 @@
     <Grid>
         <StackPanel Width="400" HorizontalAlignment="Center" Margin="10">
             <TextBlock>Game Config Page!</TextBlock>
+            <!--
             <Label>Time Limit</Label>
             <Slider/>
-            
+            -->
             <Label>Optional Parameters</Label>
             <Label>Number of Potatoes</Label>
             <Slider/>
             
+            <!--
             <Label>Mutators</Label>
             <StackPanel>
                 <RadioButton Content="RadioButton"/>
                 <RadioButton Content="RadioButton"/>
                 <RadioButton Content="RadioButton"/>
             </StackPanel>
+            -->
         
-            <StackPanel Orientation="Horizontal" Width="400">
-                <Button>Cancel</Button>
-                <Button>Start Game</Button>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Width="400" Height="50">
+                <Button Margin="20 0" Width="150">Cancel</Button>
+                <Button Margin="20 0" Width="150" HorizontalAlignment="Right">Start Game</Button>
             </StackPanel>
             
 

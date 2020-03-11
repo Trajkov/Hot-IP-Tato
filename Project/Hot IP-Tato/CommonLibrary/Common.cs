@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
@@ -10,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Net.NetworkInformation;
 
 namespace Common
 {
@@ -27,6 +29,10 @@ namespace Common
         public string Name { get; }
         // The state of the potato - alive, dead, exploded, etc.
         public bool Exploded { get; set; }
+        // The state of the potato if it was lost due to disconnect
+        // This could signal a client disconnect which would remove them
+        // from the pool
+        public bool Passing { get; set; }
         // How many passes are left before the potato explodes.
         public int TotalPasses { get; }
         public int Passes { get; set; }
@@ -38,10 +44,6 @@ namespace Common
         // The server which will moderate the game.
         // * Potatoes will be sent to the server to be passed around.
         public string server { get; }
-
-
-
-
 
         public IP_Tato()
         {
@@ -143,12 +145,18 @@ namespace Common
     }
     public class Message
     {
+        public bool successfulTransmission { get; set; }
+
         public Byte[] data { get; set; }
 
         public Message() { }
         public Message(int buffersize)
         {
             this.data = new Byte[buffersize];
+        }
+        public Message(bool success)
+        {
+            this.successfulTransmission = success;
         }
     }
     public static class Utilities
@@ -164,20 +172,39 @@ namespace Common
         }
         public static object Deserialize(Message message)
         {
-            using (var memoryStream = new MemoryStream(message.data))
+            try
             {
-                return (new BinaryFormatter()).Deserialize(memoryStream) as object;
+                using (var memoryStream = new MemoryStream(message.data))
+                {
+                    return (new BinaryFormatter()).Deserialize(memoryStream) as object;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("An error has occurred in Deserializing {0}", e);
+                return false;
             }
         }
+
         /// <summary>
         /// Gets the machine's internet-facing IP Address
         /// </summary>
         /// <returns>External IPv4 Address</returns>
+        /// 
+        
+    }
+    public class Networking
+    {
+        private static byte localHostNum = 1;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>External IPv4 Address</returns>
         public static string getExternalIPE()
         {
-            
             try
             {
+
                 using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
                 {
                     string localIP;
@@ -187,12 +214,41 @@ namespace Common
                     return localIP;
                 }
             }
-            catch(Exception e)
+            catch (SocketException e)
+            {
+
+                //System.Net.Internals.SocketExceptionFactory.ExtendedSocketException:
+                Console.WriteLine("GetExternalIPE SocketException: {0}", e.ToString());
+                Console.WriteLine("Starting server in LAN mode (No Internet connection was detected)");
+                // Return the first hop that was attempted using a tracert with a maximum of one hop.
+                Console.WriteLine(Dns.GetHostAddresses("1.1.1.1").ToString());
+
+                return $"127.0.0.{localHostNum++}";
+            }
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
                 throw;
             }
-            
+
+        }
+        public static string getLocalIPE()
+        {
+            try
+            {
+                return $"127.0.0.{localHostNum++}";
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine(e.ToString());
+                throw;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                throw;
+            }
+
         }
     }
     [Serializable]
@@ -208,9 +264,14 @@ namespace Common
             this.address = address;
             this.port = port;
         }
+        public IPEndPoint EndPoint()
+        {
+            return new IPEndPoint(IPAddress.Parse(this.address), this.port);
+        }
         public override string ToString()
         {
             return $"{hostname}@{address}:{port}";
         }
     }
 }
+

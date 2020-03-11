@@ -6,16 +6,10 @@
         xmlns:local="clr-namespace:Hot_IP_Tato_Client"
         mc:Ignorable="d"
         Title="Hot IP_Tato Client" Height="450" Width="450" Background="#432109">
-    
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition Width="4*"></ColumnDefinition>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        
-        <Frame Name="ClientFrame" Grid.Column="1" NavigationUIVisibility="Hidden" Source="MainMenu.xaml">
-            <!-- This is where the join will populate available sessions. -->
+
+    <Grid Margin="5">
+        <Frame Name="ApplicationFrame" NavigationUIVisibility="Hidden" Source="MainMenu.xaml">
+            <!-- This is where the Application will navigate between pages. -->
         </Frame>
     </Grid>
 </Window>

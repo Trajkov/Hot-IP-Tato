@@ -34,7 +34,7 @@ namespace Hot_IP_Tato_Client
         }
         private void btn_Quit_Click(object sender, RoutedEventArgs e)
         {
-
+            Application.Current.Shutdown();
         }
     }
 }

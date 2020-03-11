@@ -61,7 +61,7 @@ namespace ConsoleSandbox
         public static void Start()
         {
             // Start the network discovery server.
-            HelloPacket hello = new HelloPacket("server", Utilities.getExternalIPE(), port);
+            HelloPacket hello = new HelloPacket("server", Networking.getExternalIPE(), port);
             Thread udpserver = new Thread(() => StartListener(hello));
             udpserver.Start();
 
@@ -240,7 +240,6 @@ namespace ConsoleSandbox
             while (tater.Passes < tater.TotalPasses)
             {
                 // Choose a targetClient
-
                 tater.TargetClient = RouteTater(hostList, tater.LastClient);
 
                 Console.WriteLine("The new targetClient is: {0}", tater.TargetClient);
@@ -287,16 +286,28 @@ namespace ConsoleSandbox
                         // It assigns the response byte [] to the buffer.
                         int bytes = stream.Read(inboundMessage.data, 0, inboundMessage.data.Length);
 
+                        if (inboundMessage.Equals(0))
+                        {
+                            Console.WriteLine("Received an empty message");
+                        }
+
                         // Deserialize the data which was received and create a tater
                         object responseData = Utilities.Deserialize(inboundMessage) as object;
                         tater = responseData as IP_Tato;
                         // Verify the current state is correct
                         Console.WriteLine("Server received: {0}", tater.ToString());
 
+                        
+
                         // Close out the connection
                         stream.Close();
                         Console.WriteLine("---Server Transaction Closed---");
-
+                        if (tater.Passing == false)
+                        {
+                            Console.WriteLine($"{tater.TargetClient} has disconnected");
+                            hostList.Remove(tater.TargetClient);
+                            continue;
+                        }
                         // Break out of the retry loop.
                         break;
                     }
@@ -465,8 +476,9 @@ namespace ConsoleSandbox
             HelloPacket newTargetClient;
             //do
             //{
-                newTargetClient = hostList[random.Next(hostList.ToArray().Length)];
-                rolls++;
+            int index = random.Next(hostList.ToArray().Length);
+            newTargetClient = hostList[index];
+            rolls++;
             //}
             // while (newTargetClient == lastClient);
             Console.WriteLine("New targetClient {0} chosen after {1} roll(s)", newTargetClient, rolls);

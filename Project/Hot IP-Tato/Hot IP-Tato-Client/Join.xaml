@@ -8,15 +8,22 @@
       d:DesignHeight="450" d:DesignWidth="450"
       Title="Join">
 
-    <Grid Background="White">
-        <ListView>
+    <Grid Margin="5" Background="ForestGreen">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="4*"></ColumnDefinition>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        
+        <ListView Margin="10">
             <!--This will be where all of the discovered lobbies will show up.-->
-            
+            <ListViewItem>Hello</ListViewItem>
         </ListView>
-        <StackPanel>
-            <Button Click="btn_Refresh_Click">Refresh</Button>
-            <!--TODO make the join jump to an intermediate screen.-->
+        <StackPanel Grid.Column="1" Margin="5">
+            <Button Click="btn_Host_Click">Host Game</Button>
             <Button Click="btn_Join_Click">Join</Button>
+            <!--TODO make the join jump to an intermediate screen.-->
+            <Button Click="btn_Start_Click">Start</Button>
+            <Button Click="btn_TestTater">TestTater</Button>
             <Button Click="btn_Cancel_Click">Cancel</Button>
         </StackPanel>
     </Grid>

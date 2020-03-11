@@ -27,29 +27,36 @@ namespace Hot_IP_Tato_Client
         HelloPacket clientInfo;
         public Join()
         {
-            clientInfo = new HelloPacket("client", Utilities.getExternalIPE(), 13000);
+            clientInfo = new HelloPacket("client", Networking.getExternalIPE(), 13000);
             InitializeComponent();
         }
 
+        private void btn_Host_Click(object sender, RoutedEventArgs e)
+        {
+            // Navigate to the Host_Config Page.
+            NavigationService.Navigate(new Uri("Game_Config.xaml", UriKind.Relative));
+        }
         private void btn_Cancel_Click(object sender, RoutedEventArgs e)
         {
             // Clean up everything.
             NavigationService.Navigate(new Uri("MainMenu.xaml", UriKind.Relative));
         }
 
-        private void btn_Refresh_Click(object sender, RoutedEventArgs e)
+        private void btn_Join_Click(object sender, RoutedEventArgs e)
         {
             // Start the network discovery
             Console.WriteLine("Starting the UDP Broadcast at {0}", clientInfo.ToString());
             Thread UDPBroadcast = new Thread(() => StartBroadcast(clientInfo));
             UDPBroadcast.Start();
+
+            Client client = new Client();
+            Thread ListenerThread = new Thread(() => client.Start());
+            ListenerThread.Start();
         }
 
-        private void btn_Join_Click(object sender, RoutedEventArgs e)
+        private void btn_Start_Click(object sender, RoutedEventArgs e)
         {
-            // Start the network listener.
-            Thread ListenerThread = new Thread(() => Client.Listen(clientInfo));
-            ListenerThread.Start();
+            
         }
 
         public static void StartBroadcast(HelloPacket thisHost)
@@ -206,6 +213,39 @@ namespace Hot_IP_Tato_Client
             tater.Passes++;
 
             return tater as object;
+        }
+
+        private void btn_TestTater(object sender, RoutedEventArgs e)
+        {
+            IP_Tato tater = new IP_Tato();
+            tater.Explode();
+
+            Task showDialogBox = Task.Run(() => {
+                // This will update the GUI with the results of the tater
+                EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
+
+                Application app = Application.Current;
+                app.Dispatcher.Invoke((Action)delegate {
+                    Game_Popup game_Popup = new Game_Popup(tater);
+                    // Try to update GUI from this thread.
+
+
+                    // The ShowDialog is the perfect function for this.
+                    // It blocks until the window is closed which is all I needed it to do.
+                    game_Popup.Show();
+
+                    // If I can Wait outside of this dispatcher, then it should be best
+                    game_Popup.Closing += (object send, System.ComponentModel.CancelEventArgs eargs) => { ewh.Set(); };
+                });
+                // Event Listener
+                ewh.WaitOne();
+                
+                // Timeout check
+
+                // Return whether the potato was requested to be passed.
+                return true;
+            });
+            Console.WriteLine("The Popup has completed its task.");
         }
     }
 }

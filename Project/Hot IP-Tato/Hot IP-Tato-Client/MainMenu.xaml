@@ -11,7 +11,7 @@
     <Grid>
         <StackPanel Grid.Column="1" Background="#65350c">
             <TextBlock HorizontalAlignment="Center" FontSize="24" Foreground="White">Hot IP_Tato Client</TextBlock>
-            <Image Source="potatoes.jpg" Width="200" Height="200"></Image>
+            <Image Source="img/potatoes.jpg" Width="200" Height="200"></Image>
             <Button Click="btn_Join_Click">Join</Button>
             <Button Click="btn_Options_Click">Options</Button>
             <Button Click="btn_Quit_Click">Quit</Button>

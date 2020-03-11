@@ -10,7 +10,7 @@
         Closing="Game_Popup_Closing">
     <StackPanel >
         <TextBlock HorizontalAlignment="Center" Name="txtWhoSentTater" Text="Player has sent you a Hot IP-Tato"></TextBlock>
-        <Image Width="200" Height="200" Source="potatoes.jpg"></Image>
-        <Button Name="btnPassPotato" Click="btnPassPotato_Click" Width="250" Height="100" VerticalAlignment="Bottom" FontSize="30" FontWeight="Black">Pass the Potato! (IsDefault=True)</Button>
+        <Image Name="imgPotato" Width="200" Height="200" Source="img/potatoes.jpg"></Image>
+        <Button Name="btnPassPotato" Click="btnPassPotato_Click" Width="250" Height="100" VerticalAlignment="Bottom" FontSize="30" FontWeight="Black">Pass the Potato!</Button>
     </StackPanel>
 </Window>

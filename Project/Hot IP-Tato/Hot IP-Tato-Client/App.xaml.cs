@@ -36,7 +36,7 @@ namespace Hot_IP_Tato_Client
             // IP_Tato tater = new IP_Tato();
             // ProcessPotato(tater);
 
-            HelloPacket clientInfo = new HelloPacket("client", Utilities.getExternalIPE(), 13000);
+            HelloPacket clientInfo = new HelloPacket("client", Networking.getExternalIPE(), 13000);
 
             // Start the network discovery
             Console.WriteLine("Starting the UDP Broadcast at {0}", clientInfo.ToString());

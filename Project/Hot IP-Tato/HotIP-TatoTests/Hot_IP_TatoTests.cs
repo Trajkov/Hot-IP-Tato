@@ -30,4 +30,12 @@ namespace Hot_IP_TatoTests
 
         }
     }
+    public class HostTests
+    {
+        [TestMethod]
+        public void TestGetNewClients()
+        {
+            
+        }
+    }
 }
