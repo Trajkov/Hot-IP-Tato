@@ -31,8 +31,7 @@ namespace Hot_IP_Tato_Client
         public Game_Config()
         {
             // Start listening for clients on the LAN
-            host = new Host(localIP: true);
-            host.StartDiscoverClient();
+            
             // host.ClientJoined += UpdateClientList();
             // Bind the Hostlist to the ListBox
             
@@ -40,22 +39,29 @@ namespace Hot_IP_Tato_Client
             // bind_ListBox_ConnectedClients.Source = host.ClientList;
             InitializeComponent();
 
-            host.ClientJoined += Host_ClientJoined;
+            host = new Host(localIP: true);
+            host.RaiseClientJoinedEvent += Host_ClientJoined;
+            // Start listening for clients on the LAN
+            host.StartDiscoverClient();
+
             List_ConnectedClients.ItemsSource = host.HostList;
         }
 
         private void Host_ClientJoined(object sender, Common.HelloPacket e)
         {
-            // Add the new client to the listview.
-            
+            // Do anything special needed to set up the client
+            //  Nothing so far
+
+            UpdateHostList();
         }
 
         private void UpdateHostList()
         {
-            // It was not updating because the source was already set to the hostlist.
-            // This will refresh the binding on the ListView
-            List_ConnectedClients.ItemsSource = null;
-            List_ConnectedClients.ItemsSource = host.HostList;
+            Application app = Application.Current;
+            app.Dispatcher.Invoke((Action)delegate
+            {
+                List_ConnectedClients.Items.Refresh();
+            });
         }
         public void btn_Start_Click(object sender, RoutedEventArgs e)
         {

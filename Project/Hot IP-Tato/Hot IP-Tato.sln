@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.902
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hot IP-Tato", "Hot IP-Tato\Hot IP-Tato.csproj", "{07F894B9-4A34-4654-BFB9-BCC39A4609E2}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HotIP-TatoTests", "HotIP-TatoTests\HotIP-TatoTests.csproj", "{7C74E5C5-2E74-435A-86C7-02F6AC5DB299}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleSandbox", "ConsoleSandbox\ConsoleSandbox.csproj", "{6E175E29-B215-4453-96D7-462AF9F7A144}"
@@ -29,10 +27,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{07F894B9-4A34-4654-BFB9-BCC39A4609E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{07F894B9-4A34-4654-BFB9-BCC39A4609E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{07F894B9-4A34-4654-BFB9-BCC39A4609E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{07F894B9-4A34-4654-BFB9-BCC39A4609E2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7C74E5C5-2E74-435A-86C7-02F6AC5DB299}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7C74E5C5-2E74-435A-86C7-02F6AC5DB299}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C74E5C5-2E74-435A-86C7-02F6AC5DB299}.Release|Any CPU.ActiveCfg = Release|Any CPU

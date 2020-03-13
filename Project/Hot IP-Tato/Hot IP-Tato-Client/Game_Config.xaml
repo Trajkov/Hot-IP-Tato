@@ -13,7 +13,7 @@
             <ColumnDefinition Width="2*"></ColumnDefinition>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <ListView Name="List_ConnectedClients" Grid.Column="0" Background="Aqua">
+        <ListView Name="List_ConnectedClients" Grid.Column="0" Margin="5" Background="#DCC064">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Hostname" Width="100" DisplayMemberBinding="{Binding hostname}"></GridViewColumn>
@@ -31,7 +31,7 @@
                 </DataTemplate>
             </ListView.ItemTemplate>-->
         </ListView>
-        <StackPanel Grid.Column="1">
+        <StackPanel Grid.Column="1" Margin="5" Background="#DCC064">
             <TextBlock>Game Config Page!</TextBlock>
             <Label>Time Limit</Label>
             <Slider/>

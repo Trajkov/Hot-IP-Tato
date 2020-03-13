@@ -17,6 +17,8 @@ namespace Hot_IP_Tato_Client
         private const int Port = 13000;
 
         public HelloPacket ClientInfo;
+
+        public List<HelloPacket> GameServerList = new List<HelloPacket>();
         
         public Client(string hostname = "Client", bool localIP = false)
         {
@@ -292,11 +294,7 @@ namespace Hot_IP_Tato_Client
             IP_Tato tater = obj as IP_Tato;
 
 
-            // Add the current host to the holderHistory
-            // This is done on the client side for pessimism's sake
-            // tater.AddCurrentHostToHolderHistory();
-            // Instead set the previous client to self
-            tater.LastClient = tater.TargetClient;
+            
 
             // Pseudocode
             // Check Flags of tater
@@ -316,6 +314,7 @@ namespace Hot_IP_Tato_Client
                 tater.Explode();
             }
             // This will update the GUI with the results of the tater
+            // There may be a better process in the test
             Application app = Application.Current;
             app.Dispatcher.Invoke((Action)delegate {
                 // Try to update GUI from this thread.
@@ -325,6 +324,9 @@ namespace Hot_IP_Tato_Client
                 // It blocks until the window is closed which is all I needed it to do.
                 game_Popup.ShowDialog();
             });
+            
+            // Set the previous client to the current client.
+            tater.LastClient = tater.TargetClient;
             // Increment current passes
             // This is done at the end in case of an involuntary host disconnect
             tater.Passes++;

@@ -27,9 +27,13 @@ namespace Hot_IP_Tato_Client
 
         public Game_Popup(IP_Tato tater)
         {
+            
             InitializeComponent();
             this.DataContext = this;
-            string whoSentText = $"{tater.TargetClient.hostname} has sent you a Hot IP_Tato";
+            string Popup_Title = $"IP_Tato - {tater.TargetClient.hostname}";
+            this.Title = Popup_Title;
+            
+            string whoSentText = $"{tater.LastClient.hostname} has sent you a Hot IP_Tato";
             Binding binding = new Binding();
             binding.Source = whoSentText;
             txtWhoSentTater.SetBinding(TextBlock.TextProperty, binding);
@@ -62,7 +66,7 @@ namespace Hot_IP_Tato_Client
 
             return true;
         }
-        private async void btnPassPotato_Click(object sender, RoutedEventArgs e)
+        private void btnPassPotato_Click(object sender, RoutedEventArgs e)
         {
             // Setting the dialog result to true could help with 
             // Tracking player disconnections.

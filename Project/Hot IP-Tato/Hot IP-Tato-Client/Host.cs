@@ -13,8 +13,11 @@ namespace Hot_IP_Tato_Client
 {
     public class Host : IDisposable
     {
+        // Delegates
+        // public delegate void ClientJoinedEventHandler(object sender, HelloPacket clientJoined);
+
         // Events
-        public event EventHandler<HelloPacket> ClientJoined;
+        public event EventHandler<HelloPacket> RaiseClientJoinedEvent;
         public event EventHandler<HelloPacket> ClientDisconnected;
 
         // private int gameID
@@ -22,17 +25,21 @@ namespace Hot_IP_Tato_Client
         private const int BufferSize = 1024;
         private const int Port = 13000;
 
-        //Generated at Construction
+        //Generated at Constructions
         private HelloPacket HostInformation;
 
         private Thread UDPListener;
-        UdpClient server;
+        UdpClient server = new UdpClient(Port);
 
         public List<HelloPacket> HostList = new List<HelloPacket>();
         public List<IPEndPoint> ClientList = new List<IPEndPoint>();
 
+        private List<Thread> IP_TatoThreads = new List<Thread>();
+
         // State Variables
         private bool ClosedGame = false;
+
+        private int IP_TatoID = 1;
 
         /// <summary>
         /// This creates a Host which will host the game.
@@ -63,9 +70,9 @@ namespace Hot_IP_Tato_Client
         {
             // UDP listener logic 
             Console.WriteLine($"Creating UDP server listener {HostInformation.ToString()}");
-
-            server = new UdpClient(Port);
+            
             Message responseData = Utilities.Serialize(HostInformation);
+
 
             try
             {
@@ -83,7 +90,9 @@ namespace Hot_IP_Tato_Client
                     {
                         // Add new client to Lists
                         HelloPacket newClient = receivedData as HelloPacket;
-                        // ClientJoined(this, newClient);
+                        Console.WriteLine($"Adding {newClient.ToString()} to HostList.");
+                        HostList.Add(newClient);
+                        this.OnRaiseClientJoinedEvent(newClient);
                     }
 
                     Console.WriteLine($"Received broadcast from {clientEP} :");
@@ -145,11 +154,16 @@ namespace Hot_IP_Tato_Client
             for (int x = 0; x < IP_TatoThreads.Length; x++)
             {
                 Console.WriteLine("Creating IP_Tato handler {0}", x + 1);
-                IP_Tato tater = new IP_Tato("Tater #" + x, 5);
-                IP_TatoThreads[x] = new Thread(() => IP_TatoHandler(tater));
-                IP_TatoThreads[x].IsBackground = true;
-                IP_TatoThreads[x].Start();
+                Add_IP_Tato();
             }
+        }
+        public void Add_IP_Tato()
+        {
+            IP_Tato tater = new IP_Tato("Tater #" + IP_TatoID++ , 5);
+            Thread newTaterThread = new Thread(() => IP_TatoHandler(tater));
+            newTaterThread.IsBackground = true;
+            newTaterThread.Start();
+            IP_TatoThreads.Add(newTaterThread);
         }
         /// <summary>
         /// Cleans up the object and ensures that the clients are properly handled.
@@ -166,6 +180,7 @@ namespace Hot_IP_Tato_Client
         private void IP_TatoHandler(IP_Tato tater)
         {
             //TODO: Finish translating what is in PassDataToClient into this function.
+            tater.LastClient = HostInformation;
             while (tater.Passes < tater.TotalPasses)
             {
                 // Select the target client
@@ -197,10 +212,12 @@ namespace Hot_IP_Tato_Client
             int rolls = 0;
             HelloPacket[] hostArray = HostList.ToArray();
             Random random = new Random();
-
-            int index = random.Next(hostArray.Length);
-            tater.TargetClient = hostArray[index];
-            rolls++;
+            do {
+                int index = random.Next(hostArray.Length);
+                tater.TargetClient = hostArray[index];
+                rolls++;
+            }
+            while (tater.TargetClient == tater.LastClient);
 
             Console.WriteLine("New targetClient {0} chosen after {1} roll(s)", tater.TargetClient, rolls);
             return tater.TargetClient;
@@ -262,20 +279,26 @@ namespace Hot_IP_Tato_Client
             {
                 // Ensure that the client connection is properly closed.
                 client.Close();
+                
             }
         }
 
-        protected virtual void OnClientJoined(HelloPacket client)
+        protected virtual void OnRaiseClientJoinedEvent(HelloPacket client)
         {
-            HostList.Add(client);
             Console.WriteLine("OnClientJoined Called");
-            ClientJoined?.Invoke(this, client);
+            EventHandler<HelloPacket> handler = RaiseClientJoinedEvent;
+            RaiseClientJoinedEvent?.Invoke(this, client);
+        }
+        private void HandleClientJoinedEvent(object sender, HelloPacket client)
+        {
+            Console.WriteLine($"Adding {client.ToString()} to HostList.");
+            HostList.Add(client);
         }
         protected virtual void OnClientDisconnected(HelloPacket client)
         {
             HostList.Remove(client);
             Console.WriteLine("OnClientDisconnected Called");
-            ClientJoined?.Invoke(this, client);
+            RaiseClientJoinedEvent?.Invoke(this, client);
         }
 
         #region IDisposable Support

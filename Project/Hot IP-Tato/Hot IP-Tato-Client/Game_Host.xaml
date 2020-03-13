@@ -8,20 +8,26 @@
       d:DesignHeight="450" d:DesignWidth="450"
       Title="Game_Host">
 
-    <Grid>
+    <Grid Background="#DCC064" >
         <StackPanel>
             <Label>Time Left:</Label>
-            <Label>Current Potato Holder: </Label>
+            <Label>Current Potato Holders </Label>
             <Label>Leader: </Label>
             <Border></Border>
             <StackPanel>
-                <Button Click="Button_Click_1">Add Potato</Button>
-                <Button Click="btn_Cancel_Click">End Game!</Button>
+                <Button Click="btn_AddPotato_Click">Add Potato</Button>
+                <Button Click="btn_EndGame_Click">End Game!</Button>
             </StackPanel>
             <Label>List of Active Players</Label>
-            <ListBox>
-                <!-- Dynamically create a listboxitem for each player-->
-            </ListBox>
+            <ListView Name="List_ConnectedClients" Grid.Column="0" Background="Aqua" MaxWidth="450">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Hostname" Width="100" DisplayMemberBinding="{Binding hostname}"></GridViewColumn>
+                        <GridViewColumn Header="Address" Width="100" DisplayMemberBinding="{Binding address}"></GridViewColumn>
+                        <GridViewColumn Header="Port" Width="100" DisplayMemberBinding="{Binding port}"></GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
             <!-- Player Mgmt -->
             <StackPanel Orientation="Horizontal">
                 <Button>Freeze Player</Button>

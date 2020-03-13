@@ -29,27 +29,39 @@ namespace Hot_IP_Tato_Client
         }
         public Game_Host(Host newHost)
         {
-            host = newHost;
+            
             InitializeComponent();
+            host = newHost;
+            host.RaiseClientJoinedEvent += Host_ClientJoined;
+            List_ConnectedClients.ItemsSource = host.HostList;
+
             host.StartGame(1);
         }
-        public void Wait()
+        private void Host_ClientJoined(object sender, Common.HelloPacket e)
         {
-            Thread.Sleep(5000);
-            host = null;
-            NavigationService.GoBack();
+            // Do anything special needed to set up the client
+            //  Nothing so far
+
+            UpdateHostList();
+        }
+        private void UpdateHostList()
+        {
+            Application app = Application.Current;
+            app.Dispatcher.Invoke((Action)delegate
+            {
+                List_ConnectedClients.Items.Refresh();
+            });
         }
 
-        private void btn_Cancel_Click(object sender, RoutedEventArgs e)
+        private void btn_EndGame_Click(object sender, RoutedEventArgs e)
         {
-            host.StopGame();
-            host = null;
+            host.Dispose();
             NavigationService.Navigate(new MainMenu());
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void btn_AddPotato_Click(object sender, RoutedEventArgs e)
         {
-
+            host.Add_IP_Tato();
         }
     }
 }
