@@ -315,15 +315,27 @@ namespace Hot_IP_Tato_Client
             }
             // This will update the GUI with the results of the tater
             // There may be a better process in the test
+            EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
+            bool taterIsPassed;
+
             Application app = Application.Current;
             app.Dispatcher.Invoke((Action)delegate {
-                // Try to update GUI from this thread.
                 Game_Popup game_Popup = new Game_Popup(tater);
+                // Try to update GUI from this thread.
+
 
                 // The ShowDialog is the perfect function for this.
                 // It blocks until the window is closed which is all I needed it to do.
-                game_Popup.ShowDialog();
+                game_Popup.Show();
+
+                // If I can Wait outside of this dispatcher, then it should be best
+                game_Popup.Closing += (object send, System.ComponentModel.CancelEventArgs eargs) => {
+                    taterIsPassed = game_Popup.Passing;
+                    ewh.Set();
+                };
             });
+            // Event Listener
+            ewh.WaitOne();
             
             // Set the previous client to the current client.
             tater.LastClient = tater.TargetClient;

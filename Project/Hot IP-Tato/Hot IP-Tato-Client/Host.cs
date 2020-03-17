@@ -38,6 +38,7 @@ namespace Hot_IP_Tato_Client
 
         // State Variables
         private bool ClosedGame = false;
+        private bool GamePaused = false;
 
         private int IP_TatoID = 1;
 
@@ -197,9 +198,10 @@ namespace Hot_IP_Tato_Client
                 {
                     // Do stuff with the tater (probably reroute)
                     tater = responseObject as IP_Tato;
-                } else if (responseObject is Message)
+                } else if (responseObject is string)
                 {
-
+                    // Right now the only string that will be returned is that the client refused the tater.
+                    HostList.Remove(tater.TargetClient);
                 }
 
                 // Verify the current state is correct
@@ -217,8 +219,9 @@ namespace Hot_IP_Tato_Client
                 tater.TargetClient = hostArray[index];
                 rolls++;
             }
-            while (tater.TargetClient == tater.LastClient);
+            while (tater.TargetClient.address == tater.LastClient.address);
 
+            Console.WriteLine("Previous Client: {0}", tater.LastClient.address);
             Console.WriteLine("New targetClient {0} chosen after {1} roll(s)", tater.TargetClient, rolls);
             return tater.TargetClient;
         }
@@ -299,6 +302,16 @@ namespace Hot_IP_Tato_Client
             HostList.Remove(client);
             Console.WriteLine("OnClientDisconnected Called");
             RaiseClientJoinedEvent?.Invoke(this, client);
+        }
+        private void HandleClientDisconnectedEvent(object sender, HelloPacket client)
+        {
+            Console.WriteLine($"Client {client.ToString()} as disconnected.");
+            Console.WriteLine($"Removing {client.ToString()} from HostList.");
+            HostList.Remove(client);
+            if(HostList.ToArray().Length < 2)
+            {
+                GamePaused = true;
+            }
         }
 
         #region IDisposable Support

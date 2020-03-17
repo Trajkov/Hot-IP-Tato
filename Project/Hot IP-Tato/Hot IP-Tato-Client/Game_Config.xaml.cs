@@ -61,6 +61,16 @@ namespace Hot_IP_Tato_Client
             app.Dispatcher.Invoke((Action)delegate
             {
                 List_ConnectedClients.Items.Refresh();
+
+                // If there is more than the minimum number of clients enable the game to start
+                if (host.HostList.ToArray().Length > 1)
+                {
+                    btn_Start.IsEnabled = true;
+                }
+                else if (host.HostList.ToArray().Length < 2)
+                {
+                    btn_Start.IsEnabled = false;
+                }
             });
         }
         public void btn_Start_Click(object sender, RoutedEventArgs e)

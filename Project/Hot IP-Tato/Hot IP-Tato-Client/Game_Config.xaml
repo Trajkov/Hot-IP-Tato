@@ -33,26 +33,26 @@
         </ListView>
         <StackPanel Grid.Column="1" Margin="5" Background="#DCC064">
             <TextBlock>Game Config Page!</TextBlock>
-            <Label>Time Limit</Label>
+            <!--<Label>Time Limit</Label>
             <Slider/>
-            
             <Label>Optional Parameters</Label>
-            <Label>Number of Potatoes</Label>
-            <Slider/>
-
-            <Button Click="btn_SpawnClient_Click">Spawn Client</Button>
-            <Button Click="btn_RefreshHostList_Click">Refresh Host List</Button>
-            
             <Label>Mutators</Label>
             <StackPanel>
                 <RadioButton Content="RadioButton"/>
                 <RadioButton Content="RadioButton"/>
                 <RadioButton Content="RadioButton"/>
             </StackPanel>
-        
-            <StackPanel Orientation="Horizontal" Width="400">
-                <Button Click="btn_Cancel_Click">Cancel</Button>
-                <Button Click="btn_Start_Click" IsEnabled="True">Start Game</Button>
+            -->
+            
+            <Label>Number of Potatoes</Label>
+            <Slider/>
+
+            <Button Click="btn_SpawnClient_Click">Spawn Client</Button>
+            <Button Click="btn_RefreshHostList_Click">Refresh Host List</Button>
+            
+            <StackPanel Orientation="Horizontal">
+                <Button Click="btn_Cancel_Click" Width="70">Cancel</Button>
+                <Button Name="btn_Start"  Click="btn_Start_Click" Width="70" IsEnabled="False">Start Game</Button>
             </StackPanel>
             
 

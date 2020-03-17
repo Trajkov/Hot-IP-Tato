@@ -9,10 +9,10 @@
       Title="Join">
 
     <Grid Margin="5">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="4*"></ColumnDefinition>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="2*"/>
+        </Grid.RowDefinitions>
 
         <ListView Name="List_OpenServers" Grid.Column="0" Background="#DCC064">
             <ListView.View>
@@ -22,17 +22,9 @@
                     <GridViewColumn Header="Port" Width="100" DisplayMemberBinding="{Binding port}"></GridViewColumn>
                 </GridView>
             </ListView.View>
-            <!--<ListView.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Margin="0,2" Background="Red" Orientation="Horizontal">
-                        <TextBlock Text="{Binding hostname}"/>
-                        <TextBlock Text="{Binding address}"/>
-                        <TextBlock Text="{Binding port}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListView.ItemTemplate>-->
+
         </ListView>
-        <StackPanel Grid.Column="1" Margin="5" Background="#65350c">
+        <StackPanel Grid.Row="1" Margin="5" Background="#65350c">
             <Button Click="btn_Host_Click">Host Game</Button>
             <Button Click="btn_Join_Click">Join</Button>
             <!--TODO make the join jump to an intermediate screen.-->
