@@ -34,9 +34,9 @@ namespace Hot_IP_Tato_Client
             this.Title = Popup_Title;
             
             string whoSentText = $"{tater.LastClient.hostname} has sent you a Hot IP_Tato";
-            Binding binding = new Binding();
-            binding.Source = whoSentText;
-            txtWhoSentTater.SetBinding(TextBlock.TextProperty, binding);
+            Binding bind_WhoSentTater = new Binding();
+            bind_WhoSentTater.Source = whoSentText;
+            txtWhoSentTater.SetBinding(TextBlock.TextProperty, bind_WhoSentTater);
 
             if (tater.Exploded)
             {

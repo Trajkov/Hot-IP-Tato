@@ -34,7 +34,6 @@ namespace Common
         // from the pool
         public bool Passing { get; set; }
         // How many passes are left before the potato explodes.
-        public int TotalPasses { get; }
         public int Passes { get; set; }
         // The target client which the potato will be sent to.
         public HelloPacket TargetClient { get; set; }
@@ -48,8 +47,7 @@ namespace Common
         public IP_Tato()
         {
             this.Name = "Potato";
-            this.TotalPasses = 5;
-            this.Passes = 0;
+            this.Passes = 1;
             this.Exploded = false;
             this.TargetClient = new HelloPacket("client", "127.0.0.1", 13000);
             this.LastClient = new HelloPacket("lastclient", "127.0.0.1", 13000);
@@ -68,42 +66,16 @@ namespace Common
         // }
 
         // This constructor is for the server.
-        public IP_Tato(string name, int totalPasses = 5)
+        public IP_Tato(string name, int passes = 5)
         {
             this.Name = name;
-            this.TotalPasses = totalPasses;
-            this.Passes = 0;
-            var flagList = new List<KeyValuePair<string, bool>>()
-            {
-
-            };
-        }
-
-        // This method checks a bunch of flags which can be applied to the object.
-        public void CheckFlags()
-        {
-            // Return flags which are true
+            this.Passes = passes;
         }
         // This will do the things which the potato should do when it expires.
         public void Explode()
         {
             this.Exploded = true;
             Console.WriteLine(".\n.\n.\nKABOOOOOOOOOOOOOOOOOM!!!!!!\nIP_Tato {0} has exploded.", this.Name);
-        }
-        // Passes the potato to the origin 
-        public void PassToServer()
-        {
-
-        }
-        // Passes the potato to another member of the group
-        public void PassOnInGroup()
-        {
-
-        }
-        public void TestMethods()
-        {
-            Console.WriteLine("-- Testing Methods within IP_Tato {0} --", this.Name);
-
         }
         public override string ToString()
         {
@@ -184,6 +156,12 @@ namespace Common
                 Console.WriteLine("An error has occurred in Deserializing {0}", e);
                 return false;
             }
+        }
+        public static int RandomInteger(int min, int max)
+        {
+            Random random = new Random();
+            int randomNum = random.Next(min, max);
+            return randomNum;
         }
 
         /// <summary>

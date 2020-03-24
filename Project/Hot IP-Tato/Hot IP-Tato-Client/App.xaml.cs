@@ -161,7 +161,7 @@ namespace Hot_IP_Tato_Client
 
             // Check if number of passes is done.
             // Greater than used to catch too many passes.
-            if (tater.Passes >= tater.TotalPasses)
+            if (tater.Passes == 0)
             {
                 tater.Explode();
             }
@@ -182,7 +182,7 @@ namespace Hot_IP_Tato_Client
             });
             // Increment current passes
             // This is done at the end in case of an involuntary host disconnect
-            tater.Passes++;
+            tater.Passes--;
 
             return tater as object;
         }

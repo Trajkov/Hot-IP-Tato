@@ -14,7 +14,7 @@
             <RowDefinition Height="2*"/>
         </Grid.RowDefinitions>
 
-        <ListView Name="List_OpenServers" Grid.Column="0" Background="#DCC064">
+        <ListView Name="List_OpenServers" Grid.Column="0" SelectionMode="Single" Background="#DCC064">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Hostname" Width="100" DisplayMemberBinding="{Binding hostname}"></GridViewColumn>
@@ -26,11 +26,15 @@
         </ListView>
         <StackPanel Grid.Row="1" Margin="5" Background="#65350c">
             <Button Click="btn_Host_Click">Host Game</Button>
+            <Button Click="Button_Click">Refresh Games</Button>
             <Button Click="btn_Join_Click">Join</Button>
             <!--TODO make the join jump to an intermediate screen.-->
-            <Button Click="btn_Start_Click">Start</Button>
-            <Button Click="btn_TestTater">TestTater</Button>
             <Button Click="btn_Cancel_Click">Cancel</Button>
+            <StackPanel Margin="0 35">
+                <Button Click="btn_Start_Click">Start</Button>
+                <Button Click="btn_TestTater">TestTater</Button>
+            </StackPanel>
         </StackPanel>
+        
     </Grid>
 </Page>

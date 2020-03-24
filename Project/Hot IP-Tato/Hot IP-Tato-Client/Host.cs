@@ -18,7 +18,7 @@ namespace Hot_IP_Tato_Client
 
         // Events
         public event EventHandler<HelloPacket> RaiseClientJoinedEvent;
-        public event EventHandler<HelloPacket> ClientDisconnected;
+        public event EventHandler<HelloPacket> RaiseClientDisconnectedEvent;
 
         // private int gameID
         // Consts
@@ -57,7 +57,8 @@ namespace Hot_IP_Tato_Client
                 HostInformation = new HelloPacket(hostname, Networking.getLocalIPE(), Port);
             }
             // TODO: Figure out whether the Host should start listening when created or if it should be started after creation by a public method.
-
+            RaiseClientJoinedEvent += HandleClientJoinedEvent;
+            RaiseClientDisconnectedEvent += HandleClientDisconnectedEvent;
         }
 
         /// <summary>
@@ -74,7 +75,6 @@ namespace Hot_IP_Tato_Client
             
             Message responseData = Utilities.Serialize(HostInformation);
 
-
             try
             {
                 // Stop listening when the game starts (in closed mode).
@@ -85,31 +85,39 @@ namespace Hot_IP_Tato_Client
                     IPEndPoint clientEP = new IPEndPoint(IPAddress.Any, 0);
                     Message message = new Message();
                     message.data = server.Receive(ref clientEP);
-
-                    object receivedData = Utilities.Deserialize(message);
-                    if (receivedData is HelloPacket)
+                    if (!ClosedGame)
                     {
-                        // Add new client to Lists
-                        HelloPacket newClient = receivedData as HelloPacket;
-                        Console.WriteLine($"Adding {newClient.ToString()} to HostList.");
-                        HostList.Add(newClient);
-                        this.OnRaiseClientJoinedEvent(newClient);
+                        object receivedData = Utilities.Deserialize(message);
+                        if (receivedData is HelloPacket)
+                        {
+                            // Add new client to Lists
+                            HelloPacket newClient = receivedData as HelloPacket;
+                            this.OnRaiseClientJoinedEvent(newClient);
+                            
+                        } if (receivedData is string)
+                        {
+                            switch(receivedData as string)
+                            {
+                                case "RESPONSE:Disconnect":
+                                    OnRaiseClientDisconnectedEvent(HostList.Find(HelloPacket => HelloPacket.EndPoint() == clientEP));
+                                    break;
+                            }
+                        }
+
+                        Console.WriteLine($"Received broadcast from {clientEP} :");
+                        Console.WriteLine($" RSVP address {receivedData.ToString()}");
+
+
+
+                        // Add the client EndPoint to the ClientList
+                        Console.WriteLine($"{clientEP} added to the clientlist");
+                        ClientList.Add(clientEP);
+
+
+                        // Send the server data to the client
+                        Console.WriteLine("UDP Server sending response");
+                        server.Send(responseData.data, responseData.data.Length, clientEP);
                     }
-
-                    Console.WriteLine($"Received broadcast from {clientEP} :");
-                    Console.WriteLine($" RSVP address {receivedData.ToString()}");
-
-                    
-                    
-                    // Add the client EndPoint to the ClientList
-                    Console.WriteLine($"{clientEP} added to the clientlist");
-                    ClientList.Add(clientEP);
-                    
-
-                    // Send the server data to the client
-                    Console.WriteLine("UDP Server sending response");
-                    server.Send(responseData.data, responseData.data.Length, clientEP);
-                    
                 }
             }
             catch (SocketException e)
@@ -140,6 +148,26 @@ namespace Hot_IP_Tato_Client
             UDPListener.Abort();
             ClosedGame = true;
         }
+        private void SendCommandToClient(HelloPacket targetClient, string command)
+        {
+            UdpClient client = new UdpClient();
+            Message request = new Message();
+            request = Utilities.Serialize(command);
+
+            IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, 0);
+            
+            client.Send(request.data, request.data.Length, targetClient.EndPoint());
+
+            Console.WriteLine($"Command {command} sent to the client: {targetClient.ToString()}");
+            Message responseMessage = new Message(256);
+            // s.Receive(responseMessage.data);
+
+            responseMessage.data = client.Receive(ref serverEP);
+            object responseData = Utilities.Deserialize(responseMessage);
+            Console.WriteLine($"Received respone from {responseData.ToString()}");
+
+            client.Close();
+        }
         /// <summary>
         /// This will start a new game.
         /// Will return when the game is over, 
@@ -160,7 +188,8 @@ namespace Hot_IP_Tato_Client
         }
         public void Add_IP_Tato()
         {
-            IP_Tato tater = new IP_Tato("Tater #" + IP_TatoID++ , 5);
+            int numberOfClients = HostList.ToArray().Length;
+            IP_Tato tater = new IP_Tato("Tater #" + IP_TatoID++ , Utilities.RandomInteger(numberOfClients, numberOfClients * 2));
             Thread newTaterThread = new Thread(() => IP_TatoHandler(tater));
             newTaterThread.IsBackground = true;
             newTaterThread.Start();
@@ -182,7 +211,7 @@ namespace Hot_IP_Tato_Client
         {
             //TODO: Finish translating what is in PassDataToClient into this function.
             tater.LastClient = HostInformation;
-            while (tater.Passes < tater.TotalPasses)
+            while (tater.Passes > 0)
             {
                 // Select the target client
                 tater.TargetClient = RouteIP_Tato(tater);
@@ -200,8 +229,17 @@ namespace Hot_IP_Tato_Client
                     tater = responseObject as IP_Tato;
                 } else if (responseObject is string)
                 {
+                    switch((string)responseObject)
+                    {
+                        case "CMD:Disconnect":
+                            this.KickPlayer(tater.TargetClient);
+                            break;
+                        case "RESPONSE:Disconnect":
+                            OnRaiseClientDisconnectedEvent(tater.TargetClient);
+                            continue;
+                    }
                     // Right now the only string that will be returned is that the client refused the tater.
-                    HostList.Remove(tater.TargetClient);
+                    
                 }
 
                 // Verify the current state is correct
@@ -213,9 +251,8 @@ namespace Hot_IP_Tato_Client
             // TODO add different routing techniques
             int rolls = 0;
             HelloPacket[] hostArray = HostList.ToArray();
-            Random random = new Random();
             do {
-                int index = random.Next(hostArray.Length);
+                int index = Utilities.RandomInteger(0, hostArray.Length);
                 tater.TargetClient = hostArray[index];
                 rolls++;
             }
@@ -237,7 +274,7 @@ namespace Hot_IP_Tato_Client
                 client.Connect(target);
 
                 // Serialize the object which will be sent
-                Message outboundMessage = Utilities.Serialize((IP_Tato)ObjectToBeSent);
+                Message outboundMessage = Utilities.Serialize(ObjectToBeSent);
 
                 // Initialize the stream
                 NetworkStream stream = client.GetStream();
@@ -286,6 +323,17 @@ namespace Hot_IP_Tato_Client
             }
         }
 
+        public void KickPlayer(HelloPacket player)
+        {
+            Console.WriteLine("Sending disconnection command to client");
+            SendCommandToClient(player, "CMD:Disconnect");
+            this.OnRaiseClientDisconnectedEvent(player);
+            // The tcplistener on their end will shut down and send the player back to the join lobby.
+            // That will trigger the Client Disconnected method on that end which will trigger the event
+            // On the server side, so really this should just do that.
+            // If it doesn't receive a response it will remove it from the server.
+        }
+
         protected virtual void OnRaiseClientJoinedEvent(HelloPacket client)
         {
             Console.WriteLine("OnClientJoined Called");
@@ -297,18 +345,18 @@ namespace Hot_IP_Tato_Client
             Console.WriteLine($"Adding {client.ToString()} to HostList.");
             HostList.Add(client);
         }
-        protected virtual void OnClientDisconnected(HelloPacket client)
-        {
-            HostList.Remove(client);
+        protected virtual void OnRaiseClientDisconnectedEvent(HelloPacket client)
+        {            
             Console.WriteLine("OnClientDisconnected Called");
-            RaiseClientJoinedEvent?.Invoke(this, client);
+            EventHandler<HelloPacket> handler = RaiseClientDisconnectedEvent;
+            RaiseClientDisconnectedEvent?.Invoke(this, client);
         }
         private void HandleClientDisconnectedEvent(object sender, HelloPacket client)
         {
-            Console.WriteLine($"Client {client.ToString()} as disconnected.");
+            Console.WriteLine($"Client {client.ToString()} has disconnected.");
             Console.WriteLine($"Removing {client.ToString()} from HostList.");
             HostList.Remove(client);
-            if(HostList.ToArray().Length < 2)
+            if (HostList.ToArray().Length < 2)
             {
                 GamePaused = true;
             }

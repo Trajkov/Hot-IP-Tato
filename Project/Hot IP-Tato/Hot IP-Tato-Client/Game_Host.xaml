@@ -30,8 +30,7 @@
             </ListView>
             <!-- Player Mgmt -->
             <StackPanel Orientation="Horizontal">
-                <Button>Freeze Player</Button>
-                <Button>Kick Player</Button>
+                <Button Click="btn_KickPlayer_Click">Kick Player(s)</Button>
             </StackPanel>
         </StackPanel>
     </Grid>

@@ -16,7 +16,11 @@ namespace Hot_IP_Tato_Client
         private const int BufferSize = 1024;
         private const int Port = 13000;
 
+        public event EventHandler<HelloPacket> RaiseClientDisconnectedEvent;
+
         public HelloPacket ClientInfo;
+        public HelloPacket ServerInfo;
+        private TcpListener TCPListener = null;
 
         public List<HelloPacket> GameServerList = new List<HelloPacket>();
         
@@ -31,7 +35,7 @@ namespace Hot_IP_Tato_Client
                 ClientInfo = new HelloPacket(hostname, Networking.getLocalIPE(), Port);
             }
         }
-        private static void StartServerDiscover(HelloPacket thisHost)
+        private static void DiscoverServer(HelloPacket thisHost)
         {
             // Thread BroadcastResponseListener = new Thread(() => StartTCPListener(thisHost));
             // BroadcastResponseListener.Start();
@@ -42,7 +46,7 @@ namespace Hot_IP_Tato_Client
             Message request = new Message();
             request = Utilities.Serialize(thisHost);
 
-            IPEndPoint serverEP = new IPEndPoint(IPAddress.Any, 0);
+            IPEndPoint broadcastEP = new IPEndPoint(IPAddress.Any, 0);
 
             Client.EnableBroadcast = true;
             Client.Send(request.data, request.data.Length, new IPEndPoint(IPAddress.Broadcast, 13000));
@@ -51,105 +55,67 @@ namespace Hot_IP_Tato_Client
             Message responseMessage = new Message(256);
             // s.Receive(responseMessage.data);
 
-            responseMessage.data = Client.Receive(ref serverEP);
+            responseMessage.data = Client.Receive(ref broadcastEP);
             HelloPacket responseData = (HelloPacket)Utilities.Deserialize(responseMessage);
             Console.WriteLine($"Received respone from {responseData.ToString()}");
 
             Client.Close();
         }
-
-        private void StartGameListener(HelloPacket ClientInfo)
+        private void UDPCommandListener(HelloPacket server)
         {
-            TcpListener listener = null;
+            UdpClient CommandListener = new UdpClient(ClientInfo.EndPoint());
+            Message responseData = Utilities.Serialize("ERR:Response Not Processed");
             try
             {
-                Console.WriteLine("IP is {0}", ClientInfo.address);
-                IPAddress localip = IPAddress.Parse((ClientInfo.address));
-                Console.WriteLine("Starting a tcplistener at {0} using port {1}", localip, ClientInfo.port);
-                listener = new TcpListener(localip, ClientInfo.port);
-                listener.Start();
-                Console.WriteLine("Listener has started.");
-
-                // Create Buffer
-                byte[] buffer = new byte[BufferSize];
 
                 while (true)
                 {
-                    // Add an extra space to help distinguish between each server transaction.
-                    Console.WriteLine();
-                    Console.WriteLine("Client wating for a connection... ");
+                    Console.WriteLine("UDP Waiting for broadcast");
 
-                    // Accept a pending connection
-                    TcpClient client = listener.AcceptTcpClient();
-                    Console.WriteLine("Connected!");
+                    IPEndPoint serverEP = server.EndPoint();
+                    Message message = new Message();
+                    message.data = CommandListener.Receive(ref serverEP);
 
-                    // Instantiate the stream
-                    NetworkStream stream = client.GetStream();
-
-                    // While there is data to be read
-                    // TODO: Implement the ability to read more data with a smaller buffer.
-                    while ((stream.Read(buffer, 0, buffer.Length)) != 0)
+                    object receivedData = Utilities.Deserialize(message);
+                    if (receivedData is string)
                     {
-                        try
+                        switch ((string)receivedData)
                         {
-                            // Prep the objects needed for the transaction
-                            // Instantiate a Message object to hold the incoming object
-                            Message incomingMessage = new Message();
-                            // Instantiate a Message object to hold the response
-                            Message responseMessage = new Message();
-                            object objectResponse;
-
-                            
-                            // Assign the data which has been read to incomingMessage
-                            incomingMessage.data = buffer;
-                            // Deserialize the inbound data into an object which can be processed 
-                            //   By the function or workerthread.
-                            object receivedObject = Utilities.Deserialize(incomingMessage) as object;
-
-                            // Verify what type of object was received.
-                            Console.WriteLine("Client Received: " + receivedObject.ToString());
-                            Console.WriteLine("Processing Request...");
-                            if (receivedObject is IP_Tato)
-                            {
-                                objectResponse = (IP_Tato)ProcessPotato(receivedObject);
-                            }
-                            else
-                            {
-                                responseMessage.successfulTransmission = false;
-                                objectResponse = "Received a non-IP_Tato object";
-                            }
-                            // Verify that the server received the correct data
-                            
-                            
-                            // Instantiate a Message to hold the response message
-                           
-                            responseMessage = Utilities.Serialize(objectResponse);
-
-                            // Send back a response.
-                            // This should also include provisions for a voluntary host disconnect
-                            stream.Write(responseMessage.data, 0, responseMessage.data.Length);
-                            // Verify that the data sent against the client receipt.
-                            Console.WriteLine("Client Sent {0}", objectResponse.ToString());
-                        }
-                        catch (Exception ErrorProcessRequest)
-                        {
-                            Console.WriteLine("The request failed to be processed. Error details: " + ErrorProcessRequest);
+                            case "CMD:Disconnect":
+                                Console.WriteLine("Received Command: Disconnect");
+                                this.OnRaiseClientDisconnectedEvent(this.ClientInfo);
+                                receivedData = "CMD:Disconnect";
+                                responseData = Utilities.Serialize("RESPONSE:Disconnect");
+                                break;
                         }
                     }
-                    Console.WriteLine("---Listener Transaction Closed---");
-                    stream.Close();
-                    client.Close();
+
+                    Console.WriteLine($"Received broadcast from {serverEP} :");
+                    Console.WriteLine($" RSVP address {receivedData.ToString()}");
+
+
+                    // Send the server verification that the response was received.
+                    Console.WriteLine("UDP Client sending response");
+                    CommandListener.Send(responseData.data, responseData.data.Length, serverEP);
+
                 }
             }
             catch (SocketException e)
             {
-                Console.WriteLine("Server SocketException: {0}", e);
+                Console.WriteLine(e);
+            }
+            catch (ThreadAbortException e)
+            {
+                Console.WriteLine("Thread Aborted: {0}", e);
+                Console.WriteLine("Disposing of UDP server");
             }
             finally
             {
-                listener.Stop();
+                CommandListener.Close();
             }
         }
+
+        
 
         public void Start()
         {
@@ -199,21 +165,47 @@ namespace Hot_IP_Tato_Client
             // s.Receive(responseMessage.data);
 
             responseMessage.data = Client.Receive(ref serverEP);
-            HelloPacket responseData = (HelloPacket)Utilities.Deserialize(responseMessage);
+            
+            object responseData = Utilities.Deserialize(responseMessage);
+            if(responseData is HelloPacket)
+            {
+                ServerInfo = responseData as HelloPacket;
+                Thread UDPCommandListenerThread = new Thread(() => UDPCommandListener(ServerInfo));
+                UDPCommandListenerThread.Start();
+            }
             Console.WriteLine($"Received respone from {responseData.ToString()}");
 
             Client.Close();
         }
+        private void SendUDPToServer(string command)
+        {
+            UdpClient client = new UdpClient(ClientInfo.EndPoint());
+            Message request = new Message();
+            request = Utilities.Serialize(command);
+
+            IPEndPoint clientEP = new IPEndPoint(IPAddress.Any, 0);
+            
+            client.Send(request.data, request.data.Length, ServerInfo.EndPoint());
+
+            Console.WriteLine($"Command {command} sent to the server: {ServerInfo.ToString()}");
+            Message responseMessage = new Message(256);
+            // s.Receive(responseMessage.data);
+
+            responseMessage.data = client.Receive(ref clientEP);
+            object responseData = Utilities.Deserialize(responseMessage);
+            Console.WriteLine($"Received respone from {responseData.ToString()}");
+
+            client.Close();
+        }
         private void StartListener()
         {
-            TcpListener listener = null;
             try
             {
                 Console.WriteLine("IP is {0}", ClientInfo.address);
                 IPAddress localip = IPAddress.Parse((ClientInfo.address));
                 Console.WriteLine("Starting a tcplistener at {0} using port {1}", localip, ClientInfo.port);
-                listener = new TcpListener(localip, ClientInfo.port);
-                listener.Start();
+                TCPListener = new TcpListener(localip, ClientInfo.port);
+                TCPListener.Start();
                 Console.WriteLine("Listener has started.");
 
                 // Create Buffer
@@ -226,14 +218,13 @@ namespace Hot_IP_Tato_Client
                     Console.WriteLine("Client wating for a connection... ");
 
                     // Accept a pending connection
-                    TcpClient client = listener.AcceptTcpClient();
+                    TcpClient client = TCPListener.AcceptTcpClient();
                     Console.WriteLine("Connected!");
 
                     // Instantiate the stream
                     NetworkStream stream = client.GetStream();
 
                     // While there is data to be read
-                    // TODO: Implement the ability to read more data with a smaller buffer.
                     while ((stream.Read(buffer, 0, buffer.Length)) != 0)
                     {
                         try
@@ -243,28 +234,21 @@ namespace Hot_IP_Tato_Client
                             // Assign the data which has been read to incomingMessage
                             incomingMessage.data = buffer;
                             // Deserialize the inbound data into an object which can be processed 
-                            //   By the function or workerthread.
-                            IP_Tato receivedTato = Utilities.Deserialize(incomingMessage) as IP_Tato;
+                            
+                            object receivedObject = Utilities.Deserialize(incomingMessage);
                             // Verify that the server received the correct data
-                            Console.WriteLine("Client Received: " + receivedTato.ToString());
+                            Console.WriteLine("Client Received: " + receivedObject.ToString());
 
                             Console.WriteLine("Processing Request...");
 
-                            // TODO: Create a worker thread to work with the potato.
-                            //      This will be especially necessary when UI gets involved.
-                            // For now it is just going to call a function
-                            IP_Tato objectResponse = (IP_Tato)ProcessPotato(receivedTato);
-
-
                             // Instantiate a Message to hold the response message
                             Message responseMessage = new Message();
+                            object objectResponse = ProcessRequest(receivedObject);
+                            
                             responseMessage = Utilities.Serialize(objectResponse);
 
                             // Send back a response.
-                            // This should also include provisions for a voluntary host disconnect
                             stream.Write(responseMessage.data, 0, responseMessage.data.Length);
-                            // Verify that the data sent against the client receipt.
-                            Console.WriteLine("Client Sent {0}", objectResponse.ToString());
                         }
                         catch (Exception ErrorProcessRequest)
                         {
@@ -282,68 +266,81 @@ namespace Hot_IP_Tato_Client
             }
             finally
             {
-                listener.Stop();
+                TCPListener.Stop();
             }
         }
-        private static object ProcessPotato(object obj)
+        private object ProcessRequest(object receivedObject)
         {
-            // Some of these commands should be placed in the potato object
-            //  Because they then can be protected 
-
-            // Create IP_Tato
-            IP_Tato tater = obj as IP_Tato;
-
-
-            
-
-            // Pseudocode
-            // Check Flags of tater
-            // Do stuff according to the flags on tater
-            // Flags are stored as bools and should be assigned by
-            // * names rather than position.
-            // Flag Precedence is a thing a potato should explode before other things happen.
-
-            // Print last player that tater was passed from
-            // "$player passed a potato to you"
-
-
-            // Check if number of passes is done.
-            // Greater than used to catch too many passes.
-            if (tater.Passes >= tater.TotalPasses)
+            object objectResponse = "ERR:ProcessFailure";
+            if (receivedObject is IP_Tato)
             {
-                tater.Explode();
+                // Process the IP_Tato 
+                IP_Tato tater = receivedObject as IP_Tato;
+                tater.Passes--;
+                
+
+                // Check if tater has exploded
+                if (tater.Passes == 0)
+                {
+                    tater.Explode();
+                }
+
+                // Set up a EventWaitHandle to block code execution until the popup is closing.
+                EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
+                bool taterIsPassed = false;
+
+                // Update the GUI with the results of the tater
+                Application app = Application.Current;
+                app.Dispatcher.Invoke((Action)delegate {
+                    // Create a new popup
+                    Game_Popup game_Popup = new Game_Popup(tater);
+                    
+                    // Show the popup
+                    game_Popup.Show();
+
+                    // Set up an event handler to capture the results of the popup
+                    game_Popup.Closing += (object send, System.ComponentModel.CancelEventArgs eargs) => {
+                        taterIsPassed = game_Popup.Passing;
+                        ewh.Set();
+                    };
+                    RaiseClientDisconnectedEvent += (object send, HelloPacket ClientInfo) =>
+                    {
+                        Application.Current.Dispatcher.Invoke((Action)delegate
+                        {
+                            game_Popup.Close();
+                        });
+                    };
+                });
+                // Block until the popup closing event fires.
+                ewh.WaitOne();
+                if(taterIsPassed)
+                {
+                    // Set the previous client to the current client.
+                    tater.LastClient = tater.TargetClient;
+                    objectResponse = tater;
+                } else
+                {
+                    OnRaiseClientDisconnectedEvent(ClientInfo);
+                    objectResponse = "RESPONSE:Disconnect";
+                }
             }
-            // This will update the GUI with the results of the tater
-            // There may be a better process in the test
-            EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
-            bool taterIsPassed;
-
-            Application app = Application.Current;
-            app.Dispatcher.Invoke((Action)delegate {
-                Game_Popup game_Popup = new Game_Popup(tater);
-                // Try to update GUI from this thread.
-
-
-                // The ShowDialog is the perfect function for this.
-                // It blocks until the window is closed which is all I needed it to do.
-                game_Popup.Show();
-
-                // If I can Wait outside of this dispatcher, then it should be best
-                game_Popup.Closing += (object send, System.ComponentModel.CancelEventArgs eargs) => {
-                    taterIsPassed = game_Popup.Passing;
-                    ewh.Set();
-                };
-            });
-            // Event Listener
-            ewh.WaitOne();
             
-            // Set the previous client to the current client.
-            tater.LastClient = tater.TargetClient;
-            // Increment current passes
-            // This is done at the end in case of an involuntary host disconnect
-            tater.Passes++;
+            return objectResponse;
+        }
 
-            return tater as object;
+        protected virtual void OnRaiseClientDisconnectedEvent(HelloPacket client)
+        {
+            Console.WriteLine("OnClientDisconnected Called");
+            EventHandler<HelloPacket> handler = RaiseClientDisconnectedEvent;
+            RaiseClientDisconnectedEvent?.Invoke(this, client);
+        }
+        private void HandleClientDisconnectedEvent(object sender, HelloPacket client)
+        {
+            Console.WriteLine($"This Client: {client.ToString()} has disconnected.");
+            
+            // Send a message to the server informing them of the disconnection
+            // **** This will use the UDP broadcast
+            // **** the UDP server is still running on the server so why not send the info to it.
         }
 
         //// Accept one client connection asynchronously.
@@ -418,7 +415,98 @@ namespace Hot_IP_Tato_Client
         //    // server table, read data, etc.)
         //    Console.WriteLine("Client connected completed");
         //}
+        //private void StartGameListener(HelloPacket ClientInfo)
+        //{
+        //    TcpListener listener = null;
+        //    try
+        //    {
+        //        Console.WriteLine("IP is {0}", ClientInfo.address);
+        //        IPAddress localip = IPAddress.Parse((ClientInfo.address));
+        //        Console.WriteLine("Starting a tcplistener at {0} using port {1}", localip, ClientInfo.port);
+        //        listener = new TcpListener(localip, ClientInfo.port);
+        //        listener.Start();
+        //        Console.WriteLine("Listener has started.");
 
+        //        // Create Buffer
+        //        byte[] buffer = new byte[BufferSize];
+
+        //        while (true)
+        //        {
+        //            // Add an extra space to help distinguish between each server transaction.
+        //            Console.WriteLine();
+        //            Console.WriteLine("Client wating for a connection... ");
+
+        //            // Accept a pending connection
+        //            TcpClient client = listener.AcceptTcpClient();
+        //            Console.WriteLine("Connected!");
+
+        //            // Instantiate the stream
+        //            NetworkStream stream = client.GetStream();
+
+        //            // While there is data to be read
+        //            // TODO: Implement the ability to read more data with a smaller buffer.
+        //            while ((stream.Read(buffer, 0, buffer.Length)) != 0)
+        //            {
+        //                try
+        //                {
+        //                    // Prep the objects needed for the transaction
+        //                    // Instantiate a Message object to hold the incoming object
+        //                    Message incomingMessage = new Message();
+        //                    // Instantiate a Message object to hold the response
+        //                    Message responseMessage = new Message();
+        //                    object objectResponse;
+
+
+        //                    // Assign the data which has been read to incomingMessage
+        //                    incomingMessage.data = buffer;
+        //                    // Deserialize the inbound data into an object which can be processed 
+        //                    //   By the function or workerthread.
+        //                    object receivedObject = Utilities.Deserialize(incomingMessage) as object;
+
+        //                    // Verify what type of object was received.
+        //                    Console.WriteLine("Client Received: " + receivedObject.ToString());
+        //                    Console.WriteLine("Processing Request...");
+        //                    if (receivedObject is IP_Tato)
+        //                    {
+        //                        objectResponse = (IP_Tato)ProcessRequest(receivedObject);
+        //                    }
+        //                    else
+        //                    {
+        //                        responseMessage.successfulTransmission = false;
+        //                        objectResponse = "Received a non-IP_Tato object";
+        //                    }
+        //                    // Verify that the server received the correct data
+
+
+        //                    // Instantiate a Message to hold the response message
+
+        //                    responseMessage = Utilities.Serialize(objectResponse);
+
+        //                    // Send back a response.
+        //                    // This should also include provisions for a voluntary host disconnect
+        //                    stream.Write(responseMessage.data, 0, responseMessage.data.Length);
+        //                    // Verify that the data sent against the client receipt.
+        //                    Console.WriteLine("Client Sent {0}", objectResponse.ToString());
+        //                }
+        //                catch (Exception ErrorProcessRequest)
+        //                {
+        //                    Console.WriteLine("The request failed to be processed. Error details: " + ErrorProcessRequest);
+        //                }
+        //            }
+        //            Console.WriteLine("---Listener Transaction Closed---");
+        //            stream.Close();
+        //            client.Close();
+        //        }
+        //    }
+        //    catch (SocketException e)
+        //    {
+        //        Console.WriteLine("Server SocketException: {0}", e);
+        //    }
+        //    finally
+        //    {
+        //        listener.Stop();
+        //    }
+        //}
     }
     
 }

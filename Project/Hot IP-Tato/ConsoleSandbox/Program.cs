@@ -237,7 +237,7 @@ namespace ConsoleSandbox
 
 
 
-            while (tater.Passes < tater.TotalPasses)
+            while (tater.Passes > 0)
             {
                 // Choose a targetClient
                 tater.TargetClient = RouteTater(hostList, tater.LastClient);
@@ -437,7 +437,7 @@ namespace ConsoleSandbox
             // Create IP_Tato
             IP_Tato tater = obj as IP_Tato;
             // Increment current passes
-            tater.Passes++;
+            tater.Passes--;
             
             // Add the current host to the holderHistory
             // This is done on the client side for pessimism's sake
@@ -458,7 +458,7 @@ namespace ConsoleSandbox
 
             // Check if number of passes is done.
             // Greater than used to catch too many passes.
-            if (tater.Passes >= tater.TotalPasses)
+            if (tater.Passes == 0)
             {
                 tater.Explode();
             }
