@@ -43,7 +43,7 @@ namespace Hot_IP_Tato_Client
             // Do anything special needed to set up the client
             //  Nothing so far
 
-            UpdateHostList();
+            this.UpdateHostList();
         }
 
         private void Host_ClientDisconnected(object sender, Common.HelloPacket e)
@@ -53,7 +53,7 @@ namespace Hot_IP_Tato_Client
             //  Maybe send an update to the players saying client has disconnected 
             //    with a reason why or if the tater exploded. This would be part of the client screen.
 
-            UpdateHostList();
+            this.UpdateHostList();
         }
 
         private void UpdateHostList()
@@ -79,7 +79,7 @@ namespace Hot_IP_Tato_Client
         private void btn_KickPlayer_Click(object sender, RoutedEventArgs e)
         {
             host.KickPlayer(List_ConnectedClients.SelectedItem as Common.HelloPacket);
-           
+
             UpdateHostList();
         }
     }

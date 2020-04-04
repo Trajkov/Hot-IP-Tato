@@ -96,7 +96,7 @@ namespace ConsoleSandbox
             Console.WriteLine(tater.ToString());
 
             // Test the methods within the tater
-            tater.TestMethods();
+            // tater.TestMethods();
 
             // Serialization Test
             Console.WriteLine("Testing Serialization and Deserialization.");

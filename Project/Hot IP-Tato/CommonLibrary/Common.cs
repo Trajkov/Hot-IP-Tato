@@ -250,6 +250,18 @@ namespace Common
         {
             return $"{hostname}@{address}:{port}";
         }
+        public override bool Equals(object obj)
+        {
+            if ((obj == null) || !this.GetType().Equals(obj.GetType()))
+            {
+                return false;
+            }
+            else
+            {
+                HelloPacket p = (HelloPacket)obj;
+                return (hostname == p.hostname) && (address == p.address);
+            }
+        }
     }
 }
 

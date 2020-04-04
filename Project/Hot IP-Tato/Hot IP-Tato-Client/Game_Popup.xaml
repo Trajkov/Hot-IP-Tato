@@ -8,7 +8,7 @@
       d:DesignHeight="450" d:DesignWidth="800"
       Title="Hot IP-Tato" Width="450" Height="450"
         Background="#432109"
-        Closing="Game_Popup_Closing">
+        >
     <StackPanel Margin="5" Background="#DCC064">
         <TextBlock HorizontalAlignment="Center" Name="txtWhoSentTater" Text="Player has sent you a Hot IP-Tato"></TextBlock>
         <Image Name="imgPotato" Width="200" Height="200" Source="img/potatoes.jpg"></Image>

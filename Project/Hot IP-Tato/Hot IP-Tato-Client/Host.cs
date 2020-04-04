@@ -227,6 +227,12 @@ namespace Hot_IP_Tato_Client
                 {
                     // Do stuff with the tater (probably reroute)
                     tater = responseObject as IP_Tato;
+                    if (tater.Exploded)
+                    {
+                        Console.WriteLine("Tater has exploded \n removing client from Hostlist.");
+                        this.KickPlayer(tater.TargetClient);
+                        //OnRaiseClientDisconnectedEvent(tater.TargetClient);
+                    }
                 } else if (responseObject is string)
                 {
                     switch((string)responseObject)
@@ -236,7 +242,7 @@ namespace Hot_IP_Tato_Client
                             break;
                         case "RESPONSE:Disconnect":
                             OnRaiseClientDisconnectedEvent(tater.TargetClient);
-                            continue;
+                            break;
                     }
                     // Right now the only string that will be returned is that the client refused the tater.
                     
@@ -337,7 +343,7 @@ namespace Hot_IP_Tato_Client
         protected virtual void OnRaiseClientJoinedEvent(HelloPacket client)
         {
             Console.WriteLine("OnClientJoined Called");
-            EventHandler<HelloPacket> handler = RaiseClientJoinedEvent;
+            EventHandler <HelloPacket> handler = RaiseClientJoinedEvent;
             RaiseClientJoinedEvent?.Invoke(this, client);
         }
         private void HandleClientJoinedEvent(object sender, HelloPacket client)
@@ -348,6 +354,8 @@ namespace Hot_IP_Tato_Client
         protected virtual void OnRaiseClientDisconnectedEvent(HelloPacket client)
         {            
             Console.WriteLine("OnClientDisconnected Called");
+            // Remove the client from the list before sending it out to all of the subscribers.
+            HostList.Remove(client);
             EventHandler<HelloPacket> handler = RaiseClientDisconnectedEvent;
             RaiseClientDisconnectedEvent?.Invoke(this, client);
         }
@@ -355,9 +363,9 @@ namespace Hot_IP_Tato_Client
         {
             Console.WriteLine($"Client {client.ToString()} has disconnected.");
             Console.WriteLine($"Removing {client.ToString()} from HostList.");
-            HostList.Remove(client);
-            if (HostList.ToArray().Length < 2)
+            if (HostList.ToArray().Length == 1)
             {
+                SendCommandToClient(HostList[0], "CMD:Win");
                 GamePaused = true;
             }
         }

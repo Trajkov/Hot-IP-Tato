@@ -11,19 +11,23 @@ using Common;
 
 namespace Hot_IP_Tato_Client
 {
-    class Client
+    class Client : IDisposable
     {
         private const int BufferSize = 1024;
         private const int Port = 13000;
 
         public event EventHandler<HelloPacket> RaiseClientDisconnectedEvent;
+        public event EventHandler<HelloPacket> RaiseClientWinEvent;
 
         public HelloPacket ClientInfo;
         public HelloPacket ServerInfo;
         private TcpListener TCPListener = null;
 
+        private Thread ServerDiscoverThread;
+        private Thread TCPGameThread;
+
         public List<HelloPacket> GameServerList = new List<HelloPacket>();
-        
+
         public Client(string hostname = "Client", bool localIP = false)
         {
             if (!localIP)
@@ -34,8 +38,10 @@ namespace Hot_IP_Tato_Client
             {
                 ClientInfo = new HelloPacket(hostname, Networking.getLocalIPE(), Port);
             }
+            RaiseClientDisconnectedEvent += HandleClientDisconnectedEvent;
+            RaiseClientWinEvent += HandleClientWinEvent;
         }
-        private static void DiscoverServer(HelloPacket thisHost)
+        private void DiscoverServer()
         {
             // Thread BroadcastResponseListener = new Thread(() => StartTCPListener(thisHost));
             // BroadcastResponseListener.Start();
@@ -44,7 +50,7 @@ namespace Hot_IP_Tato_Client
 
             UdpClient Client = new UdpClient();
             Message request = new Message();
-            request = Utilities.Serialize(thisHost);
+            request = Utilities.Serialize(ClientInfo);
 
             IPEndPoint broadcastEP = new IPEndPoint(IPAddress.Any, 0);
 
@@ -61,28 +67,45 @@ namespace Hot_IP_Tato_Client
 
             Client.Close();
         }
-        private void UDPCommandListener(HelloPacket server)
+        private void StartDiscoveringServers()
+        {
+            ServerDiscoverThread = new Thread(DiscoverServer);
+            ServerDiscoverThread.Start();
+        }
+        private void StopDiscoveringServers()
+        {
+            ServerDiscoverThread.Abort();
+            ServerDiscoverThread = null;
+        }
+
+        private void UDPCommandListener()
         {
             UdpClient CommandListener = new UdpClient(ClientInfo.EndPoint());
             Message responseData = Utilities.Serialize("ERR:Response Not Processed");
+            bool active = true;
             try
             {
 
-                while (true)
+                while (active)
                 {
                     Console.WriteLine("UDP Waiting for broadcast");
 
-                    IPEndPoint serverEP = server.EndPoint();
+                    IPEndPoint serverEP = ServerInfo.EndPoint();
                     Message message = new Message();
                     message.data = CommandListener.Receive(ref serverEP);
+                    Console.WriteLine(ServerInfo);
 
                     object receivedData = Utilities.Deserialize(message);
                     if (receivedData is string)
                     {
                         switch ((string)receivedData)
                         {
+                            case "CMD:Win":
+                                this.OnRaiseClientWinEvent();
+                                break;
                             case "CMD:Disconnect":
                                 Console.WriteLine("Received Command: Disconnect");
+                                active = false;
                                 this.OnRaiseClientDisconnectedEvent(this.ClientInfo);
                                 receivedData = "CMD:Disconnect";
                                 responseData = Utilities.Serialize("RESPONSE:Disconnect");
@@ -115,12 +138,12 @@ namespace Hot_IP_Tato_Client
             }
         }
 
-        
+
 
         public void Start()
         {
             Console.WriteLine("Starting the UDP Broadcast at {0}", ClientInfo.ToString());
-            Thread UDPBroadcast = new Thread(() => StartBroadcast());
+            Thread UDPBroadcast = new Thread(() => JoinServer());
             UDPBroadcast.Start();
 
             Client client = new Client();
@@ -144,7 +167,7 @@ namespace Hot_IP_Tato_Client
             //    }
             //}
         }
-        private void StartBroadcast()
+        private void JoinServer()
         {
             // Thread BroadcastResponseListener = new Thread(() => StartTCPListener(thisHost));
             // BroadcastResponseListener.Start();
@@ -165,12 +188,12 @@ namespace Hot_IP_Tato_Client
             // s.Receive(responseMessage.data);
 
             responseMessage.data = Client.Receive(ref serverEP);
-            
+
             object responseData = Utilities.Deserialize(responseMessage);
-            if(responseData is HelloPacket)
+            if (responseData is HelloPacket)
             {
                 ServerInfo = responseData as HelloPacket;
-                Thread UDPCommandListenerThread = new Thread(() => UDPCommandListener(ServerInfo));
+                Thread UDPCommandListenerThread = new Thread(UDPCommandListener);
                 UDPCommandListenerThread.Start();
             }
             Console.WriteLine($"Received respone from {responseData.ToString()}");
@@ -184,7 +207,7 @@ namespace Hot_IP_Tato_Client
             request = Utilities.Serialize(command);
 
             IPEndPoint clientEP = new IPEndPoint(IPAddress.Any, 0);
-            
+
             client.Send(request.data, request.data.Length, ServerInfo.EndPoint());
 
             Console.WriteLine($"Command {command} sent to the server: {ServerInfo.ToString()}");
@@ -234,7 +257,7 @@ namespace Hot_IP_Tato_Client
                             // Assign the data which has been read to incomingMessage
                             incomingMessage.data = buffer;
                             // Deserialize the inbound data into an object which can be processed 
-                            
+
                             object receivedObject = Utilities.Deserialize(incomingMessage);
                             // Verify that the server received the correct data
                             Console.WriteLine("Client Received: " + receivedObject.ToString());
@@ -244,7 +267,7 @@ namespace Hot_IP_Tato_Client
                             // Instantiate a Message to hold the response message
                             Message responseMessage = new Message();
                             object objectResponse = ProcessRequest(receivedObject);
-                            
+
                             responseMessage = Utilities.Serialize(objectResponse);
 
                             // Send back a response.
@@ -277,13 +300,16 @@ namespace Hot_IP_Tato_Client
                 // Process the IP_Tato 
                 IP_Tato tater = receivedObject as IP_Tato;
                 tater.Passes--;
-                
+
 
                 // Check if tater has exploded
                 if (tater.Passes == 0)
                 {
                     tater.Explode();
+                    objectResponse = tater;
+                    // OnRaiseClientDisconnectedEvent(ClientInfo);
                 }
+
 
                 // Set up a EventWaitHandle to block code execution until the popup is closing.
                 EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.ManualReset);
@@ -291,43 +317,59 @@ namespace Hot_IP_Tato_Client
 
                 // Update the GUI with the results of the tater
                 Application app = Application.Current;
-                app.Dispatcher.Invoke((Action)delegate {
+                app.Dispatcher.Invoke((Action)delegate
+                {
                     // Create a new popup
                     Game_Popup game_Popup = new Game_Popup(tater);
-                    
+
                     // Show the popup
                     game_Popup.Show();
 
+
+
                     // Set up an event handler to capture the results of the popup
-                    game_Popup.Closing += (object send, System.ComponentModel.CancelEventArgs eargs) => {
+                    game_Popup.Closing += (object send, System.ComponentModel.CancelEventArgs eargs) =>
+                    {
                         taterIsPassed = game_Popup.Passing;
                         ewh.Set();
                     };
-                    RaiseClientDisconnectedEvent += (object send, HelloPacket ClientInfo) =>
-                    {
-                        Application.Current.Dispatcher.Invoke((Action)delegate
-                        {
-                            game_Popup.Close();
-                        });
-                    };
                 });
+                if (tater.Exploded)
+                {
+                    ewh.Set();
+                    for (int x = 0; x < 10; x++)
+                    {
+                        app.Dispatcher.Invoke((Action)delegate
+                        {
+                            // Create a new popup
+                            Game_Popup game_Popup = new Game_Popup(tater);
+
+                            // Show the popup
+                            game_Popup.Show();
+                        });
+                    }
+                    // OnRaiseClientDisconnectedEvent(ClientInfo);
+                }
                 // Block until the popup closing event fires.
                 ewh.WaitOne();
-                if(taterIsPassed)
+                if (taterIsPassed || tater.Exploded)
                 {
                     // Set the previous client to the current client.
                     tater.LastClient = tater.TargetClient;
                     objectResponse = tater;
-                } else
+                }
+                else
                 {
                     OnRaiseClientDisconnectedEvent(ClientInfo);
                     objectResponse = "RESPONSE:Disconnect";
                 }
+
             }
-            
+
             return objectResponse;
         }
 
+        #region Events Support
         protected virtual void OnRaiseClientDisconnectedEvent(HelloPacket client)
         {
             Console.WriteLine("OnClientDisconnected Called");
@@ -342,6 +384,65 @@ namespace Hot_IP_Tato_Client
             // **** This will use the UDP broadcast
             // **** the UDP server is still running on the server so why not send the info to it.
         }
+
+        protected virtual void OnRaiseClientWinEvent()
+        {
+            Console.WriteLine("RaiseClientWinEvent Fired");
+            EventHandler<HelloPacket> handler = RaiseClientWinEvent;
+            RaiseClientWinEvent?.Invoke(this, ClientInfo);
+        }
+
+        private void HandleClientWinEvent(object sender, HelloPacket client)
+        {
+            Application.Current.Dispatcher.Invoke((Action)delegate
+            {
+                // Create a new popup
+                WinWindow win = new WinWindow();
+
+                // Show the popup
+                win.Show();
+
+
+            });
+        }
+
+        #endregion
+        
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~Client() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
 
         //// Accept one client connection asynchronously.
         //private void DoBeginAcceptTcpClient(TcpListener
@@ -508,5 +609,5 @@ namespace Hot_IP_Tato_Client
         //    }
         //}
     }
-    
+
 }
